@@ -1,0 +1,15 @@
+{
+	"required": true,
+	"package": "com.dysmn.doyouseemenow.mixin",
+	"compatibilityLevel": "JAVA_17",
+	"mixins": [
+		"MobDamageMixin",
+		"MobEntityCanSeeMixin",
+		"MobEntityDataMixin",
+		"MobSetTargetMixin",
+		"TargetPredicateMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

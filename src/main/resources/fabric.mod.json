@@ -1,0 +1,36 @@
+{
+	"schemaVersion": 1,
+	"id": "do_you_see_me_now",
+	"version": "${version}",
+	"name": "Do You See Me Now",
+	"description": "Do You See Me Now - a Fabric mod by dysmn",
+	"authors": [
+		"dysmn"
+	],
+	"contact": {},
+	"license": "CC0-1.0",
+	"icon": "assets/do_you_see_me_now/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.dysmn.doyouseemenow.DoYouSeeMeNow"
+		],
+		"client": [
+			"com.dysmn.doyouseemenow.DoYouSeeMeNowClient"
+		]
+	},
+	"mixins": [
+		"do_you_see_me_now.mixins.json",
+		{
+			"config": "do_you_see_me_now.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"accessWidener": "do_you_see_me_now.accesswidener",
+	"depends": {
+		"fabricloader": ">=0.15.0",
+		"minecraft": "~1.20.1",
+		"java": ">=17",
+		"fabric-api": "*"
+	}
+}
