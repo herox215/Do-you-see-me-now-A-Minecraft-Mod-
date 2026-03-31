@@ -8,7 +8,7 @@
 		"dysmn"
 	],
 	"contact": {},
-	"license": "CC0-1.0",
+	"license": "MIT",
 	"icon": "assets/do_you_see_me_now/icon.png",
 	"environment": "*",
 	"entrypoints": {
