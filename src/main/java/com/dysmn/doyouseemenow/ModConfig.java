@@ -28,7 +28,9 @@ public class ModConfig {
 	/** Entity IDs that ignore FOV and light restrictions (e.g. "minecraft:wither") */
 	public List<String> blacklistedMobs = List.of(
 		"minecraft:ender_dragon",
-		"minecraft:wither"
+		"minecraft:wither",
+		"minecraft:warden",
+		"minecraft:enderman"
 	);
 
 	// --- Vision ---
