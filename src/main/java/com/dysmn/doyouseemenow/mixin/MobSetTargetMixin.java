@@ -1,13 +1,12 @@
 package com.dysmn.doyouseemenow.mixin;
 
 import com.dysmn.doyouseemenow.LastKnownPositionAccess;
+import com.dysmn.doyouseemenow.ModConfig;
 import com.dysmn.doyouseemenow.NetworkConstants;
 import com.dysmn.doyouseemenow.VisibilityCheck;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.boss.WitherEntity;
-import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -31,8 +30,8 @@ public abstract class MobSetTargetMixin {
 		LivingEntity oldTarget = this.getTarget();
 		MobEntity self = (MobEntity) (Object) this;
 
-		// Ender Dragon and Wither: always normal behavior
-		if (self instanceof EnderDragonEntity || self instanceof WitherEntity) return;
+		// Blacklisted mobs: always normal behavior
+		if (ModConfig.get().isBlacklisted(self)) return;
 
 		// New target is a player the mob can't see
 		// -> don't set target, store position for investigation instead

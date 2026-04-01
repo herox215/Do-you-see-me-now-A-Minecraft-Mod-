@@ -3,10 +3,16 @@ package com.dysmn.doyouseemenow;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.registry.Registries;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Simple JSON config. Loaded once on startup from config/do_you_see_me_now.json.
@@ -16,6 +22,14 @@ public class ModConfig {
 
 	private static ModConfig INSTANCE;
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+
+	// --- Blacklist (mobs that bypass all vision checks) ---
+
+	/** Entity IDs that ignore FOV and light restrictions (e.g. "minecraft:wither") */
+	public List<String> blacklistedMobs = List.of(
+		"minecraft:ender_dragon",
+		"minecraft:wither"
+	);
 
 	// --- Vision ---
 
@@ -57,6 +71,24 @@ public class ModConfig {
 
 	/** Max inaccuracy for melee attacks when investigating, in blocks (default: 3.0) */
 	public double meleeMaxInaccuracy = 3.0;
+
+	private transient Set<EntityType<?>> blacklistedTypes;
+
+	/**
+	 * Checks if a mob is blacklisted (bypasses all vision checks).
+	 */
+	public boolean isBlacklisted(MobEntity mob) {
+		if (blacklistedTypes == null) {
+			blacklistedTypes = new HashSet<>();
+			for (String id : blacklistedMobs) {
+				var identifier = net.minecraft.util.Identifier.tryParse(id);
+				if (identifier != null) {
+					Registries.ENTITY_TYPE.getOrEmpty(identifier).ifPresent(blacklistedTypes::add);
+				}
+			}
+		}
+		return blacklistedTypes.contains(mob.getType());
+	}
 
 	public static ModConfig get() {
 		if (INSTANCE == null) {

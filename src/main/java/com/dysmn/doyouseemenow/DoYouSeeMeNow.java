@@ -2,8 +2,6 @@ package com.dysmn.doyouseemenow;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
-import net.minecraft.entity.boss.WitherEntity;
-import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.entity.mob.MobEntity;
 
 import org.slf4j.Logger;
@@ -20,9 +18,7 @@ public class DoYouSeeMeNow implements ModInitializer {
 
 		// Register the search goal for all mobs when they load into the world
 		ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> {
-			if (entity instanceof MobEntity mob
-					&& !(mob instanceof EnderDragonEntity)
-					&& !(mob instanceof WitherEntity)) {
+			if (entity instanceof MobEntity mob && !ModConfig.get().isBlacklisted(mob)) {
 				mob.goalSelector.add(3, new SearchLastKnownPositionGoal(mob));
 			}
 		});

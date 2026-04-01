@@ -1,12 +1,9 @@
 package com.dysmn.doyouseemenow;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.boss.WitherEntity;
-import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.LightType;
 
 public final class VisibilityCheck {
 
@@ -17,7 +14,7 @@ public final class VisibilityCheck {
 	 * Used for mobs already chasing a target — no light restriction.
 	 */
 	public static boolean canMobSeeTarget(MobEntity mob, Entity target) {
-		if (mob instanceof EnderDragonEntity || mob instanceof WitherEntity) {
+		if (ModConfig.get().isBlacklisted(mob)) {
 			return true;
 		}
 		return isInFieldOfView(mob, target);
@@ -28,7 +25,7 @@ public final class VisibilityCheck {
 	 * Used for first detection: range depends on the light level at the target.
 	 */
 	public static boolean canMobDetectTarget(MobEntity mob, Entity target) {
-		if (mob instanceof EnderDragonEntity || mob instanceof WitherEntity) {
+		if (ModConfig.get().isBlacklisted(mob)) {
 			return true;
 		}
 
