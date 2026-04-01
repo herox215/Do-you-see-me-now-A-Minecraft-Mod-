@@ -15,9 +15,9 @@ public final class VisibilityCheck {
 	private static final double FOV_HALF_COS = Math.cos(Math.toRadians(FOV_DEGREES / 2.0));
 
 	// Light-based detection range: lightLevel * BLOCKS_PER_LIGHT
-	private static final double BLOCKS_PER_LIGHT = 2.0;
+	private static final double BLOCKS_PER_LIGHT = 2.5;
 	// Minimum detection range (even in total darkness)
-	private static final double MIN_DETECTION_RANGE = 2.0;
+	private static final double MIN_DETECTION_RANGE = 4.0;
 
 	private VisibilityCheck() {}
 
