@@ -1,6 +1,7 @@
 package com.dysmn.doyouseemenow.mixin;
 
 import com.dysmn.doyouseemenow.LastKnownPositionAccess;
+import com.dysmn.doyouseemenow.ModConfig;
 import com.dysmn.doyouseemenow.VisibilityCheck;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
@@ -30,10 +31,9 @@ public abstract class MobDamageMixin {
 	private void doYouSeeMeNow_onDamage(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
 		if (!((Object) this instanceof MobEntity self)) return;
 
-		// Try to find the actual attacker (for arrows: the shooter)
 		Entity attacker = source.getAttacker();
-		// Direct damage source (for arrows: the arrow itself)
 		Entity directSource = source.getSource();
+		ModConfig config = ModConfig.get();
 
 		// Case 1: attacker is a player (melee + ranged with known shooter)
 		if (attacker instanceof ServerPlayerEntity) {
@@ -42,14 +42,13 @@ public abstract class MobDamageMixin {
 			Vec3d investigatePos = attacker.getPos();
 			double distance = self.distanceTo(attacker);
 
-			// Inaccuracy: higher for ranged attacks
 			double inaccuracy;
 			if (directSource instanceof ProjectileEntity) {
 				// Ranged: mob only roughly knows where the shot came from
-				inaccuracy = Math.max(3.0, Math.min(distance * 0.2, 12.0));
+				inaccuracy = Math.max(3.0, Math.min(distance * 0.2, config.rangedMaxInaccuracy));
 			} else {
 				// Melee: position is fairly accurate
-				inaccuracy = Math.min(distance * 0.1, 3.0);
+				inaccuracy = Math.min(distance * 0.1, config.meleeMaxInaccuracy);
 			}
 
 			if (inaccuracy > 0.5) {

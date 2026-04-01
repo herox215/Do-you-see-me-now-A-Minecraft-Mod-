@@ -23,14 +23,8 @@ public class SearchLastKnownPositionGoal extends Goal {
 
 	private final MobEntity mob;
 
-	private static final int LOOK_AROUND_DURATION = 100; // 5 seconds
-	private static final double ARRIVAL_DISTANCE = 1.5;
-	private static final int WALK_TIMEOUT = 200; // 10 seconds
 	private static final int TURN_DURATION = 15; // ~0.75 seconds to turn
 	private static final int LOOK_CHANGE_INTERVAL = 25;
-
-	// Walk instead of just turning beyond this distance
-	private static final double WALK_THRESHOLD = 5.0;
 
 	private enum Phase { TURN_TOWARD, WALK_TO, LOOK_AROUND }
 
@@ -64,9 +58,10 @@ public class SearchLastKnownPositionGoal extends Goal {
 
 		if (targetPos == null) return;
 
+		ModConfig config = ModConfig.get();
 		double distance = mob.getPos().distanceTo(targetPos);
 
-		if (distance < WALK_THRESHOLD) {
+		if (distance < config.walkThreshold) {
 			// Close range (melee hit): turn first
 			this.phase = Phase.TURN_TOWARD;
 			this.walkSpeed = 1.3;
@@ -104,7 +99,7 @@ public class SearchLastKnownPositionGoal extends Goal {
 		if (timer >= TURN_DURATION) {
 			// Done turning — look around if close enough, otherwise walk there
 			double distance = mob.getPos().distanceTo(targetPos);
-			if (distance <= ARRIVAL_DISTANCE) {
+			if (distance <= ModConfig.get().arrivalDistance) {
 				phase = Phase.LOOK_AROUND;
 				timer = 0;
 				lookYaw = mob.getHeadYaw();
@@ -119,10 +114,11 @@ public class SearchLastKnownPositionGoal extends Goal {
 	private void tickWalkTo() {
 		if (targetPos == null) return;
 
+		ModConfig config = ModConfig.get();
 		mob.getLookControl().lookAt(targetPos.x, targetPos.y + 1.0, targetPos.z);
 
 		double distance = mob.getPos().distanceTo(targetPos);
-		if (distance <= ARRIVAL_DISTANCE || mob.getNavigation().isIdle()) {
+		if (distance <= config.arrivalDistance || mob.getNavigation().isIdle()) {
 			phase = Phase.LOOK_AROUND;
 			timer = 0;
 			mob.getNavigation().stop();
@@ -130,7 +126,7 @@ public class SearchLastKnownPositionGoal extends Goal {
 			return;
 		}
 
-		if (timer > WALK_TIMEOUT) {
+		if (timer > config.walkTimeout) {
 			phase = Phase.LOOK_AROUND;
 			timer = 0;
 			mob.getNavigation().stop();
@@ -162,7 +158,7 @@ public class SearchLastKnownPositionGoal extends Goal {
 	@Override
 	public boolean shouldContinue() {
 		if (mob.getTarget() != null) return false;
-		if (phase == Phase.LOOK_AROUND && timer >= LOOK_AROUND_DURATION) return false;
+		if (phase == Phase.LOOK_AROUND && timer >= ModConfig.get().lookAroundDuration) return false;
 
 		// Pick up new position (e.g. another hit while already searching)
 		Vec3d newPos = ((LastKnownPositionAccess) mob).dysmn$getLastKnownTargetPos();

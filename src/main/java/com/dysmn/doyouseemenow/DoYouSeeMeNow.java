@@ -15,6 +15,7 @@ public class DoYouSeeMeNow implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
+		ModConfig.load();
 		LOGGER.info("Do You See Me Now loaded!");
 
 		// Register the search goal for all mobs when they load into the world

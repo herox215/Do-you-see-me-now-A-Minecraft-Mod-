@@ -10,15 +10,6 @@ import net.minecraft.world.LightType;
 
 public final class VisibilityCheck {
 
-	// Field of view in degrees (60° per side = 120° total)
-	private static final double FOV_DEGREES = 120.0;
-	private static final double FOV_HALF_COS = Math.cos(Math.toRadians(FOV_DEGREES / 2.0));
-
-	// Light-based detection range: lightLevel * BLOCKS_PER_LIGHT
-	private static final double BLOCKS_PER_LIGHT = 2.5;
-	// Minimum detection range (even in total darkness)
-	private static final double MIN_DETECTION_RANGE = 4.0;
-
 	private VisibilityCheck() {}
 
 	/**
@@ -52,14 +43,12 @@ public final class VisibilityCheck {
 	 * Calculates the maximum detection range based on the light level at the target.
 	 */
 	public static double getDetectionRange(Entity target) {
-		if (target.getWorld() == null) return MIN_DETECTION_RANGE;
+		if (target.getWorld() == null) return ModConfig.get().minDetectionRange;
 
 		BlockPos targetPos = target.getBlockPos();
-
-		// Combined light level (block light + sky light)
 		int lightLevel = target.getWorld().getLightLevel(targetPos);
 
-		return Math.max(MIN_DETECTION_RANGE, lightLevel * BLOCKS_PER_LIGHT);
+		return Math.max(ModConfig.get().minDetectionRange, lightLevel * ModConfig.get().blocksPerLight);
 	}
 
 	private static boolean isWithinLightBasedRange(MobEntity mob, Entity target) {
@@ -69,6 +58,8 @@ public final class VisibilityCheck {
 	}
 
 	private static boolean isInFieldOfView(MobEntity mob, Entity target) {
+		double fovHalfCos = Math.cos(Math.toRadians(ModConfig.get().fovDegrees / 2.0));
+
 		float headYaw = mob.getHeadYaw();
 		float pitch = mob.getPitch();
 
@@ -85,6 +76,6 @@ public final class VisibilityCheck {
 
 		double dot = lookDir.dotProduct(toTarget);
 
-		return dot >= FOV_HALF_COS;
+		return dot >= fovHalfCos;
 	}
 }

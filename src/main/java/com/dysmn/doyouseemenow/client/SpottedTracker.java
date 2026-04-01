@@ -1,5 +1,7 @@
 package com.dysmn.doyouseemenow.client;
 
+import com.dysmn.doyouseemenow.ModConfig;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -14,8 +16,6 @@ public final class SpottedTracker {
 
 	// "!" spotted system
 	private static final Map<Integer, Long> spottedMobs = new HashMap<>();
-	private static final int DISPLAY_TICKS = 40;
-	private static final int FADE_TICKS = 10;
 
 	// "?" search system
 	private static final Set<Integer> searchingMobs = new HashSet<>();
@@ -36,10 +36,11 @@ public final class SpottedTracker {
 		Long spottedTick = spottedMobs.get(entityId);
 		if (spottedTick == null) return 0f;
 
+		ModConfig config = ModConfig.get();
 		long elapsed = currentTick - spottedTick;
-		if (elapsed > DISPLAY_TICKS) return 0f;
-		if (elapsed > DISPLAY_TICKS - FADE_TICKS) {
-			return (float) (DISPLAY_TICKS - elapsed) / FADE_TICKS;
+		if (elapsed > config.spottedDisplayTicks) return 0f;
+		if (elapsed > config.spottedDisplayTicks - config.spottedFadeTicks) {
+			return (float) (config.spottedDisplayTicks - elapsed) / config.spottedFadeTicks;
 		}
 		return 1.0f;
 	}
@@ -61,7 +62,8 @@ public final class SpottedTracker {
 	// === General ===
 
 	public static void tick(long currentTick) {
-		spottedMobs.entrySet().removeIf(e -> currentTick - e.getValue() > DISPLAY_TICKS);
+		int displayTicks = ModConfig.get().spottedDisplayTicks;
+		spottedMobs.entrySet().removeIf(e -> currentTick - e.getValue() > displayTicks);
 	}
 
 	public static void clear() {
