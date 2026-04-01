@@ -54,7 +54,7 @@ public final class VisibilityCheck {
 		return distance <= maxRange;
 	}
 
-	private static boolean isInFieldOfView(MobEntity mob, Entity target) {
+	public static boolean isInFieldOfView(MobEntity mob, Entity target) {
 		double fovHalfCos = Math.cos(Math.toRadians(ModConfig.get().fovDegrees / 2.0));
 
 		float headYaw = mob.getHeadYaw();

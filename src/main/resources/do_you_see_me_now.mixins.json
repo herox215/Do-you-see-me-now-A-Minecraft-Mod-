@@ -7,6 +7,9 @@
 		"MobEntityCanSeeMixin",
 		"MobEntityDataMixin",
 		"MobSetTargetMixin",
+		"PlayerAttackSoundMixin",
+		"PlayerMovementSoundMixin",
+		"ProjectileImpactSoundMixin",
 		"TargetPredicateMixin"
 	],
 	"injectors": {

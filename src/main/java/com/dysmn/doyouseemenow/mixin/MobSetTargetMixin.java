@@ -4,6 +4,7 @@ import com.dysmn.doyouseemenow.LastKnownPositionAccess;
 import com.dysmn.doyouseemenow.ModConfig;
 import com.dysmn.doyouseemenow.NetworkConstants;
 import com.dysmn.doyouseemenow.VisibilityCheck;
+import com.dysmn.doyouseemenow.detection.DetectionTracker;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.LivingEntity;
@@ -33,16 +34,27 @@ public abstract class MobSetTargetMixin {
 		// Blacklisted mobs: always normal behavior
 		if (ModConfig.get().isBlacklisted(self)) return;
 
+		// DetectionTracker bypass: detection completed, let setTarget proceed
+		if (DetectionTracker.settingDetectedTarget) {
+			if (target instanceof ServerPlayerEntity player) {
+				PacketByteBuf buf = PacketByteBufs.create();
+				buf.writeInt(self.getId());
+				ServerPlayNetworking.send(player, NetworkConstants.MOB_SPOTTED_PACKET, buf);
+			}
+			if (target != null) {
+				((LastKnownPositionAccess) self).dysmn$setLastKnownTargetPos(null);
+			}
+			return;
+		}
+
 		// New target is a player the mob can't see
 		// -> don't set target, store position for investigation instead
 		if (target instanceof ServerPlayerEntity && target != oldTarget
 				&& !VisibilityCheck.canMobSeeTarget(self, target)) {
 
-			// Store position with distance-based inaccuracy
 			Vec3d attackerPos = target.getPos();
 			double distance = self.distanceTo(target);
 
-			// Melee (< 5 blocks): nearly exact, ranged: less accurate
 			double inaccuracy = Math.min(distance * 0.15, 10.0);
 			if (inaccuracy > 0.5) {
 				double offsetX = (self.getRandom().nextDouble() - 0.5) * 2.0 * inaccuracy;
@@ -51,8 +63,6 @@ public abstract class MobSetTargetMixin {
 			}
 
 			((LastKnownPositionAccess) self).dysmn$setLastKnownTargetPos(attackerPos);
-
-			// Don't set target — mob investigates the position instead
 			ci.cancel();
 			return;
 		}
