@@ -1,5 +1,6 @@
 package com.dysmn.doyouseemenow;
 
+import com.dysmn.doyouseemenow.client.SpottedParticles;
 import com.dysmn.doyouseemenow.client.SpottedTracker;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -25,10 +26,11 @@ public class DoYouSeeMeNowClient implements ClientModInitializer {
 			client.execute(() -> SpottedTracker.setSearching(entityId, searching));
 		});
 
-		// Clean up tracker state
+		// Tick: clean up tracker state + spawn particles
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			if (client.world != null) {
 				SpottedTracker.tick(client.world.getTime());
+				SpottedParticles.tick(client.world);
 			}
 		});
 	}

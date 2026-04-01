@@ -2,6 +2,8 @@ package com.dysmn.doyouseemenow.client;
 
 import com.dysmn.doyouseemenow.ModConfig;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -30,6 +32,11 @@ public final class SpottedTracker {
 
 	public static boolean isSpotted(int entityId) {
 		return spottedMobs.containsKey(entityId);
+	}
+
+	@Nullable
+	public static Long getSpottedTick(int entityId) {
+		return spottedMobs.get(entityId);
 	}
 
 	public static float getSpottedAlpha(int entityId, long currentTick) {
