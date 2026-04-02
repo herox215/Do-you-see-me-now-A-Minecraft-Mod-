@@ -6,6 +6,7 @@ import com.dysmn.doyouseemenow.NetworkConstants;
 import com.dysmn.doyouseemenow.VisibilityCheck;
 import com.dysmn.doyouseemenow.detection.DetectionTracker;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
@@ -36,10 +37,8 @@ public abstract class MobSetTargetMixin {
 
 		// DetectionTracker bypass: detection completed, let setTarget proceed
 		if (DetectionTracker.settingDetectedTarget) {
-			if (target instanceof ServerPlayerEntity player) {
-				PacketByteBuf buf = PacketByteBufs.create();
-				buf.writeInt(self.getId());
-				ServerPlayNetworking.send(player, NetworkConstants.MOB_SPOTTED_PACKET, buf);
+			if (target instanceof ServerPlayerEntity) {
+				sendSpottedPacket(self);
 			}
 			if (target != null) {
 				((LastKnownPositionAccess) self).dysmn$setLastKnownTargetPos(null);
@@ -81,9 +80,7 @@ public abstract class MobSetTargetMixin {
 			}
 
 			// Detection disabled or recently aggroed — immediate aggro with "!" packet
-			PacketByteBuf buf = PacketByteBufs.create();
-			buf.writeInt(self.getId());
-			ServerPlayNetworking.send(player, NetworkConstants.MOB_SPOTTED_PACKET, buf);
+			sendSpottedPacket(self);
 		}
 
 		// Lost player as target -> remember last known position + mark for grace period
@@ -95,6 +92,14 @@ public abstract class MobSetTargetMixin {
 		// New target set -> clear old search position
 		if (target != null) {
 			((LastKnownPositionAccess) self).dysmn$setLastKnownTargetPos(null);
+		}
+	}
+
+	private static void sendSpottedPacket(MobEntity mob) {
+		for (ServerPlayerEntity tracker : PlayerLookup.tracking(mob)) {
+			PacketByteBuf buf = PacketByteBufs.create();
+			buf.writeInt(mob.getId());
+			ServerPlayNetworking.send(tracker, NetworkConstants.MOB_SPOTTED_PACKET, buf);
 		}
 	}
 }

@@ -6,6 +6,7 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.mob.HostileEntity;
 import java.util.function.Predicate;
 import net.minecraft.item.ArmorItem;
 import net.minecraft.item.ArmorMaterials;
@@ -85,13 +86,14 @@ public final class StealthCalculator {
 		return count;
 	}
 
-	private static final Predicate<Entity> HEARING_FILTER = ClientModConfig::canMobHear;
+	/** For proximity/FOV: any hostile mob matters, not just hearing-capable ones. */
+	private static final Predicate<Entity> HOSTILE_FILTER = e -> e instanceof HostileEntity;
 
 	private static double findNearestMobDistance(ClientPlayerEntity player,
 												 ClientWorld world, double searchRadius) {
 		Box searchBox = player.getBoundingBox().expand(searchRadius);
 		double nearest = searchRadius;
-		for (Entity entity : world.getEntitiesByClass(MobEntity.class, searchBox, HEARING_FILTER)) {
+		for (Entity entity : world.getEntitiesByClass(MobEntity.class, searchBox, HOSTILE_FILTER)) {
 			double dist = player.distanceTo(entity);
 			if (dist < nearest) nearest = dist;
 		}
@@ -102,7 +104,7 @@ public final class StealthCalculator {
 										 ClientWorld world, double searchRadius) {
 		Box searchBox = player.getBoundingBox().expand(searchRadius);
 		Vec3d playerCenter = player.getBoundingBox().getCenter();
-		for (Entity entity : world.getEntitiesByClass(MobEntity.class, searchBox, HEARING_FILTER)) {
+		for (Entity entity : world.getEntitiesByClass(MobEntity.class, searchBox, HOSTILE_FILTER)) {
 			if (entity instanceof MobEntity mob) {
 				if (VisibilityCheck.isInFieldOfView(mob, player)
 						&& hasLineOfSight(world, mob, mob.getEyePos(), playerCenter)) {

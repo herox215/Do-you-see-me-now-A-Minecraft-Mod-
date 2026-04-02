@@ -25,8 +25,8 @@ public final class DetectionTracker {
 
     private static final Map<MobEntity, DetectionState> detectionMap = new HashMap<>();
 
-    /** Tracks when a mob last had a player as target (world time). */
-    private static final Map<Integer, Long> lastAggroTick = new HashMap<>();
+    /** Tracks when a mob last had a player as target (world time). Uses UUID to avoid ID reuse. */
+    private static final Map<java.util.UUID, Long> lastAggroTick = new HashMap<>();
 
     /** Grace period in ticks — mob skips detection meter if it had a target this recently. */
     private static final int AGGRO_GRACE_TICKS = 40;
@@ -141,8 +141,11 @@ public final class DetectionTracker {
                 state.setProgress(1.0);
                 pendingUpdates.put(mob, 0.0f);
                 settingDetectedTarget = true;
-                mob.setTarget(player);
-                settingDetectedTarget = false;
+                try {
+                    mob.setTarget(player);
+                } finally {
+                    settingDetectedTarget = false;
+                }
                 it.remove();
                 continue;
             }
@@ -240,24 +243,25 @@ public final class DetectionTracker {
         return null;
     }
 
+    /**
+     * Uses UUID-based key to avoid entity ID reuse issues.
+     */
     public static void markLostTarget(MobEntity mob) {
-        lastAggroTick.put(mob.getId(), mob.getWorld().getTime());
+        lastAggroTick.put(mob.getUuid(), mob.getWorld().getTime());
     }
 
     public static boolean wasRecentlyAggroed(MobEntity mob) {
-        Long tick = lastAggroTick.get(mob.getId());
+        Long tick = lastAggroTick.get(mob.getUuid());
         if (tick == null) return false;
         long now = mob.getWorld().getTime();
         if (now - tick < AGGRO_GRACE_TICKS) return true;
-        lastAggroTick.remove(mob.getId());
+        lastAggroTick.remove(mob.getUuid());
         return false;
     }
 
     private static void cleanupAggroTicks() {
-        // Can't get world time without a mob, but entries expire naturally via wasRecentlyAggroed.
-        // Just cap size to prevent unbounded growth.
         if (lastAggroTick.size() > 500) {
-            Iterator<Map.Entry<Integer, Long>> it = lastAggroTick.entrySet().iterator();
+            Iterator<Map.Entry<java.util.UUID, Long>> it = lastAggroTick.entrySet().iterator();
             int toRemove = lastAggroTick.size() - 200;
             while (it.hasNext() && toRemove > 0) {
                 it.next();

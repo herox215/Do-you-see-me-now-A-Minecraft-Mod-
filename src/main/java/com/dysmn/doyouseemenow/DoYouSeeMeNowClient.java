@@ -7,6 +7,7 @@ import com.dysmn.doyouseemenow.client.SpottedTracker;
 import com.dysmn.doyouseemenow.client.StealthHudRenderer;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
@@ -66,6 +67,14 @@ public class DoYouSeeMeNowClient implements ClientModInitializer {
 					DetectionBarRenderer.setProgress(entityIds[i], progresses[i]);
 				}
 			});
+		});
+
+		// Clean up client state on disconnect (prevents stale data on server switch)
+		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+			SpottedTracker.clear();
+			DetectionBarRenderer.clear();
+			ClientModConfig.reset();
+			StealthCalculator.reset();
 		});
 
 		// Tick: clean up tracker state + spawn particles + detection bar interpolation

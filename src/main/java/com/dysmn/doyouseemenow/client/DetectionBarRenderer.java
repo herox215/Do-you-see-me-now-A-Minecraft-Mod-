@@ -28,8 +28,8 @@ public final class DetectionBarRenderer {
     private static final Map<Integer, Float> displayProgress = new HashMap<>();
 
     /** Tick counter for stale entry cleanup. */
-    private static final Map<Integer, Integer> lastUpdateTick = new HashMap<>();
-    private static int clientTick = 0;
+    private static final Map<Integer, Long> lastUpdateTick = new HashMap<>();
+    private static long clientTick = 0;
 
     private static final float LERP_SPEED = 0.25f;
     private static final int STALE_TIMEOUT = 40; // 2 seconds

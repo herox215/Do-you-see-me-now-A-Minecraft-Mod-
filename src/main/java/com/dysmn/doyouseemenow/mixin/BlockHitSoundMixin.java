@@ -33,12 +33,7 @@ public abstract class BlockHitSoundMixin {
 	@Inject(method = "processBlockBreakingAction", at = @At("HEAD"))
 	private void doYouSeeMeNow_blockHitSound(BlockPos pos, PlayerActionC2SPacket.Action action,
 											  Direction direction, int worldHeight, int sequence, CallbackInfo ci) {
-		if (action != PlayerActionC2SPacket.Action.START_DESTROY_BLOCK
-				&& action != PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK) {
-			return;
-		}
-
-		if (action == PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK) return;
+		if (action != PlayerActionC2SPacket.Action.START_DESTROY_BLOCK) return;
 
 		ServerWorld world = player.getServerWorld();
 		if (world.isClient()) return;

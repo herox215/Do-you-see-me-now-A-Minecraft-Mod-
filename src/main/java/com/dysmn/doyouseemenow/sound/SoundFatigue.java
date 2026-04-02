@@ -16,6 +16,7 @@ import java.util.*;
  * - 3rd+ time: ignored
  *
  * Positions expire after a configurable timeout so mobs "forget" over time.
+ * Uses UUID as key to avoid entity ID reuse issues.
  */
 public final class SoundFatigue {
 
@@ -30,7 +31,7 @@ public final class SoundFatigue {
 	/** Max remembered positions per mob. */
 	private static final int MAX_MEMORIES = 5;
 
-	private static final Map<Integer, List<FatigueEntry>> mobMemories = new HashMap<>();
+	private static final Map<UUID, List<FatigueEntry>> mobMemories = new HashMap<>();
 
 	/**
 	 * Returns the fatigue multiplier for this mob hearing a sound at the given position.
@@ -38,7 +39,7 @@ public final class SoundFatigue {
 	 * Also records the position so the next call will be more fatigued.
 	 */
 	public static double getAndRecord(MobEntity mob, Vec3d soundPos, long worldTime) {
-		int mobId = mob.getId();
+		UUID mobId = mob.getUuid();
 		List<FatigueEntry> memories = mobMemories.computeIfAbsent(mobId, k -> new ArrayList<>());
 
 		// Purge expired entries

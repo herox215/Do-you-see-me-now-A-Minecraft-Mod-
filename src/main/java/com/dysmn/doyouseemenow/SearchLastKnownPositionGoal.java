@@ -184,11 +184,10 @@ public class SearchLastKnownPositionGoal extends Goal {
 	private void sendSearchingPacket(boolean searching) {
 		if (mob.getWorld().isClient()) return;
 
-		PacketByteBuf buf = PacketByteBufs.create();
-		buf.writeInt(mob.getId());
-		buf.writeBoolean(searching);
-
 		for (ServerPlayerEntity player : PlayerLookup.tracking(mob)) {
+			PacketByteBuf buf = PacketByteBufs.create();
+			buf.writeInt(mob.getId());
+			buf.writeBoolean(searching);
 			ServerPlayNetworking.send(player, NetworkConstants.MOB_SEARCHING_PACKET, buf);
 		}
 	}
