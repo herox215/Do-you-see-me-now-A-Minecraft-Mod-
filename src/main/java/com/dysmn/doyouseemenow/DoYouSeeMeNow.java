@@ -2,6 +2,7 @@ package com.dysmn.doyouseemenow;
 
 import com.dysmn.doyouseemenow.detection.DetectionTracker;
 import com.dysmn.doyouseemenow.detection.InvestigatePlayerGoal;
+import com.dysmn.doyouseemenow.sound.SoundDetectionManager;
 import com.dysmn.doyouseemenow.sound.SoundFatigue;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
@@ -33,13 +34,19 @@ public class DoYouSeeMeNow implements ModInitializer {
 			}
 		});
 
-		// Tick detection tracker every server tick
-		ServerTickEvents.END_SERVER_TICK.register(server -> DetectionTracker.tick());
+		// Tick detection tracker and sound system every server tick
+		ServerTickEvents.END_SERVER_TICK.register(server -> {
+			DetectionTracker.tick();
+			// Flush pending sounds and periodic cleanup
+			long worldTime = server.getOverworld().getTime();
+			SoundDetectionManager.tick(worldTime);
+		});
 
 		// Clean up on server stop
 		ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
 			DetectionTracker.clear();
 			SoundFatigue.clear();
+			SoundDetectionManager.clear();
 		});
 
 		// Sync hearing config to clients on join

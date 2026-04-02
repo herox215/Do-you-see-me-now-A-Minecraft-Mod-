@@ -45,11 +45,27 @@ public class DoYouSeeMeNowClient implements ClientModInitializer {
 			client.execute(() -> SpottedTracker.setSearching(entityId, searching));
 		});
 
-		// Detection progress packet: server sends mob detection progress
+		// Detection progress packet (legacy single): server sends mob detection progress
 		ClientPlayNetworking.registerGlobalReceiver(NetworkConstants.DETECTION_PROGRESS_PACKET, (client, handler, buf, responseSender) -> {
 			int entityId = buf.readInt();
 			float progress = buf.readFloat();
 			client.execute(() -> DetectionBarRenderer.setProgress(entityId, progress));
+		});
+
+		// Detection progress batch packet: multiple updates in one packet
+		ClientPlayNetworking.registerGlobalReceiver(NetworkConstants.DETECTION_PROGRESS_BATCH_PACKET, (client, handler, buf, responseSender) -> {
+			int count = buf.readInt();
+			int[] entityIds = new int[count];
+			float[] progresses = new float[count];
+			for (int i = 0; i < count; i++) {
+				entityIds[i] = buf.readInt();
+				progresses[i] = buf.readFloat();
+			}
+			client.execute(() -> {
+				for (int i = 0; i < entityIds.length; i++) {
+					DetectionBarRenderer.setProgress(entityIds[i], progresses[i]);
+				}
+			});
 		});
 
 		// Tick: clean up tracker state + spawn particles + detection bar interpolation

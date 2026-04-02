@@ -11,26 +11,93 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 
-import java.util.List;
+import java.util.*;
 
 /**
  * Server-side manager that processes sound events and alerts nearby mobs.
- * Mobs that hear a sound get their lastKnownTargetPos set, which triggers
- * the existing SearchLastKnownPositionGoal.
+ *
+ * Performance optimization: instead of scanning entities on every sound event,
+ * a global cooldown per player limits entity scans to at most once per
+ * SCAN_COOLDOWN_TICKS. Sounds during cooldown are queued and the loudest
+ * one is used when the cooldown expires.
  */
 public final class SoundDetectionManager {
+
+	/** Minimum ticks between entity scans per player. */
+	private static final int SCAN_COOLDOWN_TICKS = 8;
+
+	/** Pending sound per player — only the loudest (largest radius) is kept. */
+	private static final Map<UUID, PendingSound> pendingSounds = new HashMap<>();
+
+	/** Last scan tick per player. */
+	private static final Map<UUID, Long> lastScanTick = new HashMap<>();
 
 	private SoundDetectionManager() {}
 
 	/**
-	 * Emit a sound event. Searches for all hearing mobs within radius
-	 * and sets their lastKnownTargetPos so they investigate.
+	 * Emit a sound event. If the player is on cooldown, the sound is queued.
+	 * Otherwise processes immediately and starts a new cooldown.
 	 */
 	public static void emitSound(ServerWorld world, SoundEvent event) {
 		if (!ModConfig.get().soundDetectionEnabled) return;
 
-		double radius = event.radius();
 		long worldTime = world.getTime();
+
+		// Non-player sounds (projectiles) process immediately — they're infrequent
+		if (event.source() == null || !(event.source() instanceof PlayerEntity player)) {
+			processSound(world, event, worldTime);
+			return;
+		}
+
+		UUID playerId = player.getUuid();
+		Long lastScan = lastScanTick.get(playerId);
+
+		if (lastScan == null || worldTime - lastScan >= SCAN_COOLDOWN_TICKS) {
+			// Cooldown expired or first sound — process now
+			processSound(world, event, worldTime);
+			lastScanTick.put(playerId, worldTime);
+			pendingSounds.remove(playerId);
+		} else {
+			// On cooldown — queue the loudest sound
+			PendingSound existing = pendingSounds.get(playerId);
+			if (existing == null || event.radius() > existing.event.radius()) {
+				pendingSounds.put(playerId, new PendingSound(world, event));
+			}
+		}
+	}
+
+	/**
+	 * Called every server tick to flush pending sounds whose cooldown has expired.
+	 */
+	public static void tick(long worldTime) {
+		if (pendingSounds.isEmpty()) return;
+
+		Iterator<Map.Entry<UUID, PendingSound>> it = pendingSounds.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry<UUID, PendingSound> entry = it.next();
+			UUID playerId = entry.getKey();
+			Long lastScan = lastScanTick.get(playerId);
+
+			if (lastScan == null || worldTime - lastScan >= SCAN_COOLDOWN_TICKS) {
+				PendingSound pending = entry.getValue();
+				processSound(pending.world, pending.event, worldTime);
+				lastScanTick.put(playerId, worldTime);
+				it.remove();
+			}
+		}
+
+		// Periodic cleanup of stale entries
+		if (worldTime % 200 == 0) {
+			lastScanTick.entrySet().removeIf(e -> worldTime - e.getValue() > 600);
+			SoundFatigue.cleanup(worldTime);
+		}
+	}
+
+	/**
+	 * Actually scans for mobs and alerts them. This is the expensive part.
+	 */
+	private static void processSound(ServerWorld world, SoundEvent event, long worldTime) {
+		double radius = event.radius();
 
 		Box searchBox = new Box(
 			event.position().subtract(radius, radius, radius),
@@ -43,11 +110,9 @@ public final class SoundDetectionManager {
 		);
 
 		for (MobEntity mob : nearbyMobs) {
-			// Sound fatigue: mobs lose interest in repeated sounds from the same spot
 			double fatigue = SoundFatigue.getAndRecord(mob, event.position(), worldTime);
 			if (fatigue <= 0.0) continue;
 
-			// Reduced interest = reduced effective radius
 			if (fatigue < 1.0) {
 				double distance = mob.getPos().distanceTo(event.position());
 				if (distance > radius * fatigue) continue;
@@ -56,16 +121,10 @@ public final class SoundDetectionManager {
 			Vec3d investigatePos = addInaccuracy(mob, event.position());
 			((LastKnownPositionAccess) mob).dysmn$setLastKnownTargetPos(investigatePos);
 		}
-
-		// Periodic cleanup (every ~10 seconds)
-		if (worldTime % 200 == 0) {
-			SoundFatigue.cleanup(worldTime);
-		}
 	}
 
 	/**
 	 * Applies the heavy armor radius multiplier to a base sound radius.
-	 * Only relevant for WALKING and SPRINTING sounds.
 	 */
 	public static double applyArmorBonus(PlayerEntity player, double baseRadius) {
 		int heavyPieces = countHeavyArmorPieces(player);
@@ -73,9 +132,6 @@ public final class SoundDetectionManager {
 		return baseRadius * multiplier;
 	}
 
-	/**
-	 * Counts how many heavy armor pieces (iron, diamond, netherite) the player wears.
-	 */
 	public static int countHeavyArmorPieces(PlayerEntity player) {
 		int count = 0;
 		for (ItemStack stack : player.getArmorItems()) {
@@ -91,19 +147,11 @@ public final class SoundDetectionManager {
 	}
 
 	private static boolean canMobHear(MobEntity mob, SoundEvent event, double radius) {
-		// Mob already has a target -> ignores sounds
 		if (mob.getTarget() != null) return false;
-
-		// Blacklisted mobs (vision bypass) also don't hear
 		if (ModConfig.get().isBlacklisted(mob)) return false;
-
-		// Hearing whitelist/blacklist check
 		if (!ModConfig.get().canMobHear(mob)) return false;
-
-		// Don't react to own sounds
 		if (event.source() != null && event.source() == mob) return false;
 
-		// Precise distance check (box is an approximation)
 		double distance = mob.getPos().distanceTo(event.position());
 		return distance <= radius;
 	}
@@ -117,4 +165,11 @@ public final class SoundDetectionManager {
 		double oz = (mob.getRandom().nextDouble() - 0.5) * 2.0 * inaccuracy;
 		return soundPos.add(ox, 0, oz);
 	}
+
+	public static void clear() {
+		pendingSounds.clear();
+		lastScanTick.clear();
+	}
+
+	private record PendingSound(ServerWorld world, SoundEvent event) {}
 }
