@@ -14,7 +14,7 @@ The bar goes green → yellow → red. Break line of sight and it decays. Some m
 
 **Investigation** — At 50% detection, mobs get suspicious and start walking toward you. If you disappear before full detection, they go to your last known position and look around. Hit a mob from the shadows and it investigates where the hit came from instead of magically knowing your position.
 
-**Sound** — Mobs hear you now. Sprinting is loud (16 blocks), walking less so (8), landing depends on fall height (up to 48). Attacks and projectile impacts are heard at 12 blocks. Heavy armor makes you louder (up to 1.75x). Sneaking is silent. One-hit kills are silent — proper stealth kills. You can shoot an arrow somewhere to create a distraction.
+**Sound** — Mobs hear you now. Sprinting is loud (16 blocks), walking less so (8), landing depends on fall height (up to 48). Attacks and projectile impacts are heard at 12 blocks. Hitting blocks (sword against stone, punching) at 10. Opening chests, doors, and trapdoors at 12. Heavy armor makes you louder (up to 1.75x). Sneaking is silent and halves block interaction noise. One-hit kills are silent — proper stealth kills. You can shoot an arrow or hit a distant block to create a distraction.
 
 Only hostile mobs react to sound (26 vanilla types, configurable).
 

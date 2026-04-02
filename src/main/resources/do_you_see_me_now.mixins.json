@@ -3,6 +3,8 @@
 	"package": "com.dysmn.doyouseemenow.mixin",
 	"compatibilityLevel": "JAVA_17",
 	"mixins": [
+		"BlockHitSoundMixin",
+		"BlockUseSoundMixin",
 		"MobDamageMixin",
 		"MobEntityCanSeeMixin",
 		"MobEntityDataMixin",

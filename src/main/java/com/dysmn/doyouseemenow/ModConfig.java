@@ -98,6 +98,12 @@ public class ModConfig {
 	/** Base radius for projectile impact sounds in blocks (default: 12) */
 	public double projectileImpactRadius = 12.0;
 
+	/** Radius for hitting blocks (sword against stone, punching, etc.) in blocks (default: 10) */
+	public double blockHitSoundRadius = 10.0;
+
+	/** Radius for using blocks (opening chests, doors, etc.) in blocks (default: 12) */
+	public double blockUseSoundRadius = 12.0;
+
 	/** Armor bonus per heavy piece (added to 1.0 multiplier) (default: 0.1875) */
 	public double heavyArmorBonusPerPiece = 0.1875;
 
