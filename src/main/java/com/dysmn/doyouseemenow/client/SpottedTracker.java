@@ -16,11 +16,11 @@ public final class SpottedTracker {
 	// "!" spotted system
 	private static final Map<Integer, Long> spottedMobs = new HashMap<>();
 
-	// "?" search system — stores entityId → tick when searching started
+	// "?" search system — stores entityId → world tick when searching started
 	private static final Map<Integer, Long> searchingMobs = new HashMap<>();
 
-	/** Max ticks a searching entry can live without being refreshed (30 seconds). */
-	private static final long SEARCHING_TTL = 600;
+	/** Max world ticks a searching entry can live without being refreshed (30 seconds at 20 TPS). */
+	private static final long SEARCHING_TTL_TICKS = 600;
 
 	private SpottedTracker() {}
 
@@ -61,9 +61,12 @@ public final class SpottedTracker {
 
 	// === "?" Searching ===
 
+	/** Last known world tick, updated from tick(). */
+	private static long lastWorldTick = 0;
+
 	public static void setSearching(int entityId, boolean searching) {
 		if (searching) {
-			searchingMobs.put(entityId, System.currentTimeMillis());
+			searchingMobs.put(entityId, lastWorldTick);
 		} else {
 			searchingMobs.remove(entityId);
 		}
@@ -76,13 +79,14 @@ public final class SpottedTracker {
 	// === General ===
 
 	public static void tick(long currentTick) {
+		lastWorldTick = currentTick;
+
 		int displayTicks = ModConfig.get().spottedDisplayTicks;
 		spottedMobs.entrySet().removeIf(e -> currentTick - e.getValue() > displayTicks);
 
 		// Prune stale searching entries (mobs that despawned without sending stop packet)
 		if (currentTick % 100 == 0 && !searchingMobs.isEmpty()) {
-			long now = System.currentTimeMillis();
-			searchingMobs.entrySet().removeIf(e -> now - e.getValue() > SEARCHING_TTL * 50);
+			searchingMobs.entrySet().removeIf(e -> currentTick - e.getValue() > SEARCHING_TTL_TICKS);
 		}
 	}
 

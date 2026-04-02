@@ -22,6 +22,7 @@ public abstract class PlayerAttackSoundMixin {
 	@Inject(method = "attack", at = @At("TAIL"))
 	private void doYouSeeMeNow_attackSound(Entity target, CallbackInfo ci) {
 		ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
+		if (player.isCreative() || player.isSpectator()) return;
 
 		// One-hit kill → silent (stealth kill)
 		if (target instanceof LivingEntity living && living.isDead()) {

@@ -33,6 +33,25 @@ public class ModConfig {
 		"minecraft:enderman"
 	);
 
+	/**
+	 * Mobs that bypass FOV checks for targeting — they use non-visual detection
+	 * (e.g. phantoms target sleepless players, zombie reinforcements, piglins react to gold).
+	 * These mobs still use the detection meter and sound system normally, but their
+	 * setTarget() calls won't be cancelled for being outside the player's FOV.
+	 */
+	public List<String> fovBypassMobs = List.of(
+		"minecraft:phantom",
+		"minecraft:piglin",
+		"minecraft:zombified_piglin",
+		"minecraft:iron_golem",
+		"minecraft:wolf",
+		"minecraft:bee",
+		"minecraft:llama",
+		"minecraft:polar_bear",
+		"minecraft:dolphin",
+		"minecraft:pufferfish"
+	);
+
 	// --- Vision ---
 
 	/** Total field of view in degrees (default: 120) */
@@ -187,6 +206,7 @@ public class ModConfig {
 	public double meleeMaxInaccuracy = 3.0;
 
 	private transient Set<EntityType<?>> blacklistedTypes;
+	private transient Set<EntityType<?>> fovBypassTypes;
 	private transient Set<EntityType<?>> hearingMobTypes;
 
 	/**
@@ -203,6 +223,23 @@ public class ModConfig {
 			}
 		}
 		return blacklistedTypes.contains(mob.getType());
+	}
+
+	/**
+	 * Checks if a mob bypasses FOV restrictions for targeting.
+	 * These mobs use non-visual detection (phantoms, piglins, wolves, etc.)
+	 */
+	public boolean bypassesFov(MobEntity mob) {
+		if (fovBypassTypes == null) {
+			fovBypassTypes = new HashSet<>();
+			for (String id : fovBypassMobs) {
+				var identifier = net.minecraft.util.Identifier.tryParse(id);
+				if (identifier != null) {
+					Registries.ENTITY_TYPE.getOrEmpty(identifier).ifPresent(fovBypassTypes::add);
+				}
+			}
+		}
+		return fovBypassTypes.contains(mob.getType());
 	}
 
 	/**

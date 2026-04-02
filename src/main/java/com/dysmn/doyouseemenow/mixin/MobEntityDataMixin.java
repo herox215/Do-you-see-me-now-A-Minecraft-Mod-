@@ -17,6 +17,9 @@ public abstract class MobEntityDataMixin implements LastKnownPositionAccess {
 	@Nullable
 	private Vec3d dysmn_lastKnownTargetPos = null;
 
+	@Unique
+	private boolean dysmn_goalsRegistered = false;
+
 	@Override
 	@Nullable
 	public Vec3d dysmn$getLastKnownTargetPos() {
@@ -26,5 +29,15 @@ public abstract class MobEntityDataMixin implements LastKnownPositionAccess {
 	@Override
 	public void dysmn$setLastKnownTargetPos(@Nullable Vec3d pos) {
 		this.dysmn_lastKnownTargetPos = pos;
+	}
+
+	@Override
+	public boolean dysmn$hasGoalsRegistered() {
+		return this.dysmn_goalsRegistered;
+	}
+
+	@Override
+	public void dysmn$setGoalsRegistered(boolean registered) {
+		this.dysmn_goalsRegistered = registered;
 	}
 }

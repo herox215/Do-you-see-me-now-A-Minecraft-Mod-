@@ -29,6 +29,7 @@ public abstract class PlayerMovementSoundMixin {
 	private void doYouSeeMeNow_checkMovementSound(CallbackInfo ci) {
 		ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
 		if (player.getWorld().isClient()) return;
+		if (player.isCreative() || player.isSpectator()) return;
 
 		ModConfig config = ModConfig.get();
 

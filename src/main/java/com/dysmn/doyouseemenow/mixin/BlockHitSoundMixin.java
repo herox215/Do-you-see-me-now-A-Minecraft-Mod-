@@ -37,6 +37,7 @@ public abstract class BlockHitSoundMixin {
 
 		ServerWorld world = player.getServerWorld();
 		if (world.isClient()) return;
+		if (player.isCreative() || player.isSpectator()) return;
 
 		// Don't spam — one sound per 10 ticks
 		long currentTick = world.getTime();

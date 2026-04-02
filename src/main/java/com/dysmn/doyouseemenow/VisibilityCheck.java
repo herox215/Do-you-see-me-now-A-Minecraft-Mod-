@@ -13,9 +13,10 @@ public final class VisibilityCheck {
 
 	/**
 	 * Per-tick FOV result cache. Key = (mobId << 32) | targetId.
-	 * Cleared at the end of each server tick via clearCache().
+	 * Recreated periodically to release backing array memory.
 	 */
-	private static final Map<Long, Boolean> fovCache = new HashMap<>();
+	private static Map<Long, Boolean> fovCache = new HashMap<>();
+	private static int cacheResetCounter = 0;
 
 	/**
 	 * Checks if a mob can see its target (FOV only).
@@ -34,6 +35,11 @@ public final class VisibilityCheck {
 	public static boolean canMobDetectTarget(MobEntity mob, Entity target) {
 		if (ModConfig.get().isBlacklisted(mob)) {
 			return true;
+		}
+
+		// Creative and spectator players are invisible to the detection system
+		if (target instanceof net.minecraft.server.network.ServerPlayerEntity player) {
+			if (player.isCreative() || player.isSpectator()) return false;
 		}
 
 		if (!isInFieldOfViewCached(mob, target)) {
@@ -83,6 +89,13 @@ public final class VisibilityCheck {
 	 * Clear the FOV cache. Call at end of each server tick.
 	 */
 	public static void clearCache() {
-		fovCache.clear();
+		cacheResetCounter++;
+		// Recreate map every 200 ticks to release backing array memory
+		if (cacheResetCounter >= 200) {
+			fovCache = new HashMap<>();
+			cacheResetCounter = 0;
+		} else {
+			fovCache.clear();
+		}
 	}
 }

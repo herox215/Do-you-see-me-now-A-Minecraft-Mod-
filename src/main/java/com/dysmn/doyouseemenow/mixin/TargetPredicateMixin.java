@@ -28,6 +28,8 @@ public abstract class TargetPredicateMixin {
 			CallbackInfoReturnable<Boolean> cir
 	) {
 		if (cir.getReturnValue() && baseEntity instanceof MobEntity mob) {
+			// Skip FOV checks for mobs with non-visual targeting
+			if (ModConfig.get().bypassesFov(mob)) return;
 			// Already chasing this target — FOV only, skip detection meter
 			if (mob.getTarget() == targetEntity) {
 				if (!VisibilityCheck.canMobSeeTarget(mob, targetEntity)) {

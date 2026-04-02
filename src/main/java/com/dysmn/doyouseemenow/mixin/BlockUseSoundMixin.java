@@ -37,6 +37,7 @@ public abstract class BlockUseSoundMixin {
 											  BlockHitResult hitResult,
 											  CallbackInfoReturnable<ActionResult> cir) {
 		if (world.isClient()) return;
+		if (player.isCreative() || player.isSpectator()) return;
 
 		ActionResult result = cir.getReturnValue();
 		if (result == ActionResult.PASS || result == ActionResult.FAIL) return;

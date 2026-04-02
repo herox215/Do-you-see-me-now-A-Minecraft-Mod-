@@ -23,7 +23,7 @@ import java.util.*;
  */
 public final class DetectionTracker {
 
-    private static final Map<MobEntity, DetectionState> detectionMap = new HashMap<>();
+    private static final Map<MobEntity, DetectionState> detectionMap = new WeakHashMap<>();
 
     /** Tracks when a mob last had a player as target (world time). Uses UUID to avoid ID reuse. */
     private static final Map<java.util.UUID, Long> lastAggroTick = new HashMap<>();
@@ -41,7 +41,7 @@ public final class DetectionTracker {
     public static boolean settingDetectedTarget = false;
 
     /** Collects progress updates to batch-send at end of tick. */
-    private static final Map<MobEntity, Float> pendingUpdates = new HashMap<>();
+    private static final Map<MobEntity, Float> pendingUpdates = new WeakHashMap<>();
 
     private DetectionTracker() {}
 
@@ -65,7 +65,7 @@ public final class DetectionTracker {
      * Called every server tick. Uses staggering to only process a subset of mobs
      * per tick, then batch-sends all progress updates.
      */
-    public static void tick() {
+    public static void tick(long worldTime) {
         tickCounter++;
         ModConfig config = ModConfig.get();
 
@@ -173,7 +173,7 @@ public final class DetectionTracker {
 
         // Periodic cleanup of stale aggro entries
         if (tickCounter % 200 == 0) {
-            cleanupAggroTicks();
+            cleanupAggroTicks(worldTime);
         }
     }
 
@@ -259,16 +259,13 @@ public final class DetectionTracker {
         return false;
     }
 
-    private static void cleanupAggroTicks() {
-        if (lastAggroTick.size() > 500) {
-            Iterator<Map.Entry<java.util.UUID, Long>> it = lastAggroTick.entrySet().iterator();
-            int toRemove = lastAggroTick.size() - 200;
-            while (it.hasNext() && toRemove > 0) {
-                it.next();
-                it.remove();
-                toRemove--;
-            }
-        }
+    private static void cleanupAggroTicks(long worldTime) {
+        lastAggroTick.entrySet().removeIf(e -> worldTime - e.getValue() > AGGRO_GRACE_TICKS * 2);
+    }
+
+    public static void removeMob(MobEntity mob) {
+        detectionMap.remove(mob);
+        pendingUpdates.remove(mob);
     }
 
     public static void clear() {

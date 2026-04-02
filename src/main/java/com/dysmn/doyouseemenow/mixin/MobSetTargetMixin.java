@@ -46,6 +46,9 @@ public abstract class MobSetTargetMixin {
 			return;
 		}
 
+		// Mobs with non-visual targeting (phantoms, piglins, wolves, etc.) skip FOV checks
+		if (ModConfig.get().bypassesFov(self)) return;
+
 		// New target is a player the mob can't see
 		// -> don't set target, store position for investigation instead
 		if (target instanceof ServerPlayerEntity && target != oldTarget

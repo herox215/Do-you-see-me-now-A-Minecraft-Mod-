@@ -12,4 +12,8 @@ public interface LastKnownPositionAccess {
 	Vec3d dysmn$getLastKnownTargetPos();
 
 	void dysmn$setLastKnownTargetPos(@Nullable Vec3d pos);
+
+	boolean dysmn$hasGoalsRegistered();
+
+	void dysmn$setGoalsRegistered(boolean registered);
 }

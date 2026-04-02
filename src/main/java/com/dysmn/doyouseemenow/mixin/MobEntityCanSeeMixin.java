@@ -17,6 +17,9 @@ public abstract class MobEntityCanSeeMixin {
 		if (!cir.getReturnValue()) return;
 		if (!((Object) this instanceof MobEntity mob)) return;
 
+		// Skip FOV checks for mobs with non-visual targeting
+		if (com.dysmn.doyouseemenow.ModConfig.get().bypassesFov(mob)) return;
+
 		// Already chasing this target — FOV only, no light restriction
 		if (mob.getTarget() != null && mob.getTarget() == entity) {
 			if (!VisibilityCheck.canMobSeeTarget(mob, entity)) {

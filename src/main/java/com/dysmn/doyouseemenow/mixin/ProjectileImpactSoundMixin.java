@@ -25,6 +25,12 @@ public abstract class ProjectileImpactSoundMixin {
 		ProjectileEntity projectile = (ProjectileEntity) (Object) this;
 		if (projectile.getWorld().isClient()) return;
 
+		// Only player-fired projectiles create sound events.
+		// Mob projectiles (skeleton arrows, blaze fireballs) are ignored
+		// to prevent mobs investigating their own projectile impacts.
+		if (!(projectile.getOwner() instanceof net.minecraft.server.network.ServerPlayerEntity owner)) return;
+		if (owner.isCreative() || owner.isSpectator()) return;
+
 		Vec3d impactPos = hitResult.getPos();
 		ServerWorld world = (ServerWorld) projectile.getWorld();
 

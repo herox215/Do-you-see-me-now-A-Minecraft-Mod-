@@ -26,18 +26,29 @@ public class DoYouSeeMeNow implements ModInitializer {
 		ModConfig.load();
 		LOGGER.info("Do You See Me Now loaded!");
 
-		// Register the search goal for all mobs when they load into the world
+		// Register AI goals for mobs — only once per entity (survives chunk reload)
 		ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> {
 			if (entity instanceof MobEntity mob && !ModConfig.get().isBlacklisted(mob)) {
-				mob.goalSelector.add(3, new SearchLastKnownPositionGoal(mob));
-				mob.goalSelector.add(2, new InvestigatePlayerGoal(mob));
+				LastKnownPositionAccess access = (LastKnownPositionAccess) mob;
+				if (!access.dysmn$hasGoalsRegistered()) {
+					mob.goalSelector.add(3, new SearchLastKnownPositionGoal(mob));
+					mob.goalSelector.add(2, new InvestigatePlayerGoal(mob));
+					access.dysmn$setGoalsRegistered(true);
+				}
+			}
+		});
+
+		// Clean up detection state when mobs unload (chunk unload, dimension change)
+		ServerEntityEvents.ENTITY_UNLOAD.register((entity, world) -> {
+			if (entity instanceof MobEntity mob) {
+				DetectionTracker.removeMob(mob);
 			}
 		});
 
 		// Tick detection tracker and sound system every server tick
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
-			DetectionTracker.tick();
 			long worldTime = server.getOverworld().getTime();
+			DetectionTracker.tick(worldTime);
 			SoundDetectionManager.tick(worldTime);
 			VisibilityCheck.clearCache();
 		});
