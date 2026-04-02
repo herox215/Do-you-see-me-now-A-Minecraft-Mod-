@@ -46,10 +46,8 @@ public class SearchLastKnownPositionGoal extends Goal {
 		return lastPos != null;
 	}
 
-	@Override
-	public boolean shouldRunEveryTick() {
-		return true;
-	}
+	// Uses default tick interval (every ~4 ticks) instead of every tick.
+	// Sufficient for look-around and walk animations.
 
 	@Override
 	public void start() {

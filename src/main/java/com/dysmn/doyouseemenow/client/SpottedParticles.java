@@ -8,28 +8,28 @@ import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import org.joml.Vector3f;
 
+import java.util.Set;
+
 /**
  * Spawns particle effects above mobs:
  * - Spotted "!": bright yellow/orange burst + trailing crit stars
  * - Searching "?": slow light blue dust floating upward
+ *
+ * Only iterates over mobs that actually have a spotted/searching state
+ * (looked up via SpottedTracker) instead of scanning all world entities.
  */
 public final class SpottedParticles {
 
-	// Yellow-orange for spotted
 	private static final DustParticleEffect SPOTTED_DUST = new DustParticleEffect(
 			new Vector3f(1.0f, 0.85f, 0.0f), 1.2f
 	);
 
-	// Light blue for searching
 	private static final DustParticleEffect SEARCH_DUST = new DustParticleEffect(
 			new Vector3f(0.33f, 0.8f, 1.0f), 0.8f
 	);
 
 	private SpottedParticles() {}
 
-	/**
-	 * Called every client tick. Spawns particles for spotted/searching mobs.
-	 */
 	public static void tick(ClientWorld world) {
 		if (world == null) return;
 		MinecraftClient client = MinecraftClient.getInstance();
@@ -37,10 +37,13 @@ public final class SpottedParticles {
 
 		long currentTick = world.getTime();
 
-		for (Entity entity : world.getEntities()) {
+		Set<Integer> activeIds = SpottedTracker.getActiveEntityIds();
+		if (activeIds.isEmpty()) return;
+
+		for (int id : activeIds) {
+			Entity entity = world.getEntityById(id);
 			if (!(entity instanceof MobEntity mob)) continue;
 
-			int id = mob.getId();
 			double x = mob.getX();
 			double y = mob.getY() + mob.getHeight() + 0.3;
 			double z = mob.getZ();
@@ -69,7 +72,6 @@ public final class SpottedParticles {
 		long elapsed = currentTick - spottedTick;
 
 		if (elapsed <= 2) {
-			// Initial burst: crit stars + dust
 			for (int i = 0; i < 8; i++) {
 				double ox = (Math.random() - 0.5) * 0.6;
 				double oy = Math.random() * 0.5;
@@ -84,7 +86,6 @@ public final class SpottedParticles {
 						0, 0.05, 0);
 			}
 		} else if (currentTick % 3 == 0) {
-			// Trailing particles: occasional dust floating up
 			double ox = (Math.random() - 0.5) * 0.3;
 			double oz = (Math.random() - 0.5) * 0.3;
 			world.addParticle(SPOTTED_DUST, x + ox, y, z + oz, 0, 0.03, 0);
@@ -98,7 +99,6 @@ public final class SpottedParticles {
 
 	private static void spawnSearchParticles(ClientWorld world, double x, double y, double z,
 			long currentTick) {
-		// Gentle ambient particles every few ticks
 		if (currentTick % 5 != 0) return;
 
 		double angle = (currentTick % 40) / 40.0 * Math.PI * 2;
@@ -108,7 +108,6 @@ public final class SpottedParticles {
 
 		world.addParticle(SEARCH_DUST, x + ox, y, z + oz, 0, 0.02, 0);
 
-		// Extra particle orbiting the other way
 		if (currentTick % 10 == 0) {
 			double ox2 = (Math.random() - 0.5) * 0.4;
 			double oz2 = (Math.random() - 0.5) * 0.4;

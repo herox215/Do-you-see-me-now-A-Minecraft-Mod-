@@ -4,10 +4,7 @@ import com.dysmn.doyouseemenow.ModConfig;
 
 import org.jetbrains.annotations.Nullable;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Tracks mob states on the client:
@@ -50,6 +47,13 @@ public final class SpottedTracker {
 			return (float) (config.spottedDisplayTicks - elapsed) / config.spottedFadeTicks;
 		}
 		return 1.0f;
+	}
+
+	/** Returns all entity IDs that currently have spotted or searching state. */
+	public static Set<Integer> getActiveEntityIds() {
+		Set<Integer> ids = new HashSet<>(spottedMobs.keySet());
+		ids.addAll(searchingMobs);
+		return ids;
 	}
 
 	// === "?" Searching ===

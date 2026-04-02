@@ -37,9 +37,9 @@ public class DoYouSeeMeNow implements ModInitializer {
 		// Tick detection tracker and sound system every server tick
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			DetectionTracker.tick();
-			// Flush pending sounds and periodic cleanup
 			long worldTime = server.getOverworld().getTime();
 			SoundDetectionManager.tick(worldTime);
+			VisibilityCheck.clearCache();
 		});
 
 		// Clean up on server stop

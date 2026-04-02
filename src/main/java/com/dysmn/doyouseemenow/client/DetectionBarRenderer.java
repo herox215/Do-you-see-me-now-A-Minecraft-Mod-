@@ -105,6 +105,12 @@ public final class DetectionBarRenderer {
             float progress = entry.getValue();
             if (progress <= 0.01f) continue;
 
+            // Distance culling — skip bars beyond 64 blocks
+            double dx = mob.getX() - cameraPos.x;
+            double dy = mob.getY() - cameraPos.y;
+            double dz = mob.getZ() - cameraPos.z;
+            if (dx * dx + dy * dy + dz * dz > 64.0 * 64.0) continue;
+
             // Interpolated position above mob head
             double x = MathHelper.lerp(tickDelta, mob.prevX, mob.getX()) - cameraPos.x;
             double y = MathHelper.lerp(tickDelta, mob.prevY, mob.getY())
