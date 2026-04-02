@@ -30,6 +30,7 @@ public final class SoundDetectionManager {
 		if (!ModConfig.get().soundDetectionEnabled) return;
 
 		double radius = event.radius();
+		long worldTime = world.getTime();
 
 		Box searchBox = new Box(
 			event.position().subtract(radius, radius, radius),
@@ -42,8 +43,23 @@ public final class SoundDetectionManager {
 		);
 
 		for (MobEntity mob : nearbyMobs) {
+			// Sound fatigue: mobs lose interest in repeated sounds from the same spot
+			double fatigue = SoundFatigue.getAndRecord(mob, event.position(), worldTime);
+			if (fatigue <= 0.0) continue;
+
+			// Reduced interest = reduced effective radius
+			if (fatigue < 1.0) {
+				double distance = mob.getPos().distanceTo(event.position());
+				if (distance > radius * fatigue) continue;
+			}
+
 			Vec3d investigatePos = addInaccuracy(mob, event.position());
 			((LastKnownPositionAccess) mob).dysmn$setLastKnownTargetPos(investigatePos);
+		}
+
+		// Periodic cleanup (every ~10 seconds)
+		if (worldTime % 200 == 0) {
+			SoundFatigue.cleanup(worldTime);
 		}
 	}
 

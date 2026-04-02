@@ -1,0 +1,104 @@
+package com.dysmn.doyouseemenow.sound;
+
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.util.math.Vec3d;
+
+import java.util.*;
+
+/**
+ * Tracks per-mob fatigue toward sound positions. Mobs lose interest in
+ * sounds that keep coming from the same spot.
+ *
+ * Each mob remembers the last few positions it investigated. Repeated
+ * sounds near those positions get progressively ignored:
+ * - 1st time: full radius
+ * - 2nd time: half radius
+ * - 3rd+ time: ignored
+ *
+ * Positions expire after a configurable timeout so mobs "forget" over time.
+ */
+public final class SoundFatigue {
+
+	private SoundFatigue() {}
+
+	/** How close a new sound must be to a remembered position to count as "same spot". */
+	private static final double SAME_SPOT_RADIUS = 5.0;
+
+	/** How many ticks until a mob forgets a position. */
+	private static final long MEMORY_DURATION_TICKS = 900; // 45 seconds
+
+	/** Max remembered positions per mob. */
+	private static final int MAX_MEMORIES = 5;
+
+	private static final Map<Integer, List<FatigueEntry>> mobMemories = new HashMap<>();
+
+	/**
+	 * Returns the fatigue multiplier for this mob hearing a sound at the given position.
+	 * 1.0 = full interest, 0.5 = reduced, 0.0 = completely bored.
+	 * Also records the position so the next call will be more fatigued.
+	 */
+	public static double getAndRecord(MobEntity mob, Vec3d soundPos, long worldTime) {
+		int mobId = mob.getId();
+		List<FatigueEntry> memories = mobMemories.computeIfAbsent(mobId, k -> new ArrayList<>());
+
+		// Purge expired entries
+		memories.removeIf(e -> worldTime - e.timestamp > MEMORY_DURATION_TICKS);
+
+		// Find if this position overlaps with a remembered one
+		FatigueEntry match = null;
+		for (FatigueEntry entry : memories) {
+			if (entry.position.distanceTo(soundPos) <= SAME_SPOT_RADIUS) {
+				match = entry;
+				break;
+			}
+		}
+
+		double multiplier;
+		if (match == null) {
+			// First time — full interest, record it
+			multiplier = 1.0;
+			if (memories.size() >= MAX_MEMORIES) {
+				memories.remove(0);
+			}
+			memories.add(new FatigueEntry(soundPos, 1, worldTime));
+		} else {
+			// Seen this spot before
+			match.hitCount++;
+			match.timestamp = worldTime; // refresh the timer
+			multiplier = switch (match.hitCount) {
+				case 1 -> 1.0;
+				case 2 -> 0.5;
+				default -> 0.0;
+			};
+		}
+
+		return multiplier;
+	}
+
+	/**
+	 * Clean up data for mobs that no longer exist.
+	 * Call periodically (e.g. every few hundred ticks) or on world unload.
+	 */
+	public static void cleanup(long worldTime) {
+		mobMemories.entrySet().removeIf(entry -> {
+			entry.getValue().removeIf(e -> worldTime - e.timestamp > MEMORY_DURATION_TICKS);
+			return entry.getValue().isEmpty();
+		});
+	}
+
+	public static void clear() {
+		mobMemories.clear();
+	}
+
+	private static class FatigueEntry {
+		Vec3d position;
+		int hitCount;
+		long timestamp;
+
+		FatigueEntry(Vec3d position, int hitCount, long timestamp) {
+			this.position = position;
+			this.hitCount = hitCount;
+			this.timestamp = timestamp;
+		}
+	}
+}
