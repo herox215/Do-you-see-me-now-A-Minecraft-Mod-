@@ -66,11 +66,7 @@ public final class SoundFatigue {
 			// Seen this spot before
 			match.hitCount++;
 			match.timestamp = worldTime; // refresh the timer
-			multiplier = switch (match.hitCount) {
-				case 1 -> 1.0;
-				case 2 -> 0.5;
-				default -> 0.0;
-			};
+			multiplier = match.hitCount >= 3 ? 0.0 : 0.5;
 		}
 
 		return multiplier;

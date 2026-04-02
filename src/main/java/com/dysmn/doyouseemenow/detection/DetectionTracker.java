@@ -97,7 +97,8 @@ public final class DetectionTracker {
             }
 
             ServerPlayerEntity player = state.getTargetPlayer();
-            if (player == null || !player.isAlive() || player.isRemoved()) {
+            if (player == null || !player.isAlive() || player.isRemoved()
+                    || player.getWorld() != mob.getWorld()) {
                 pendingUpdates.put(mob, 0.0f);
                 it.remove();
                 continue;
@@ -233,6 +234,23 @@ public final class DetectionTracker {
         double sneakFactor = player.isSneaking() ? config.detectionSneakMultiplier : 1.0;
 
         return baseRate * distanceFactor * lightFactor * movementFactor * sneakFactor;
+    }
+
+    /**
+     * Called when a mob takes damage from a player it can't see.
+     * Directly adds detection progress to prevent infinite kite exploit.
+     * After enough hits, the mob will fully detect and aggro the attacker.
+     */
+    public static void addDamageDetection(MobEntity mob, ServerPlayerEntity player, double boost) {
+        DetectionState state = detectionMap.get(mob);
+        if (state == null) {
+            state = new DetectionState(player);
+            detectionMap.put(mob, state);
+        } else if (state.getTargetPlayer() != player) {
+            state.setTargetPlayer(player);
+            state.setProgress(0.0);
+        }
+        state.addProgress(boost);
     }
 
     public static ServerPlayerEntity getSuspiciousTarget(MobEntity mob) {

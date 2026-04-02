@@ -1,6 +1,5 @@
 package com.dysmn.doyouseemenow.client;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
@@ -18,6 +17,9 @@ import java.util.Map;
  * Client-side renderer for the detection bar above mob heads.
  * Shows a colored bar (green → yellow → red) that fills as detection increases.
  * Only visible when detection progress > 0%.
+ *
+ * Uses VertexConsumerProvider from WorldRenderContext for Sodium compatibility
+ * instead of Tessellator.getInstance() which Sodium replaces.
  */
 public final class DetectionBarRenderer {
 
@@ -36,9 +38,6 @@ public final class DetectionBarRenderer {
 
     private DetectionBarRenderer() {}
 
-    /**
-     * Called from the network packet receiver.
-     */
     public static void setProgress(int entityId, float progress) {
         if (progress <= 0.001f) {
             targetProgress.remove(entityId);
@@ -48,13 +47,9 @@ public final class DetectionBarRenderer {
         lastUpdateTick.put(entityId, clientTick);
     }
 
-    /**
-     * Called every client tick to interpolate display values and clean up stale entries.
-     */
     public static void tick() {
         clientTick++;
 
-        // Lerp display toward target
         for (Map.Entry<Integer, Float> entry : targetProgress.entrySet()) {
             int id = entry.getKey();
             float target = entry.getValue();
@@ -62,7 +57,6 @@ public final class DetectionBarRenderer {
             displayProgress.put(id, current + (target - current) * LERP_SPEED);
         }
 
-        // Decay entries no longer receiving updates
         Iterator<Map.Entry<Integer, Float>> it = displayProgress.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<Integer, Float> entry = it.next();
@@ -76,13 +70,13 @@ public final class DetectionBarRenderer {
             }
         }
 
-        // Clean up stale entries
         lastUpdateTick.entrySet().removeIf(e -> clientTick - e.getValue() > STALE_TIMEOUT);
         targetProgress.keySet().retainAll(lastUpdateTick.keySet());
     }
 
     /**
      * Called from WorldRenderEvents.AFTER_ENTITIES to render detection bars in world space.
+     * Uses the context's VertexConsumerProvider for Sodium/Iris compatibility.
      */
     public static void render(WorldRenderContext context) {
         if (displayProgress.isEmpty()) return;
@@ -92,11 +86,14 @@ public final class DetectionBarRenderer {
         Vec3d cameraPos = camera.getPos();
         float tickDelta = context.tickDelta();
         MatrixStack matrices = context.matrixStack();
+        VertexConsumerProvider consumers = context.consumers();
 
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.disableDepthTest();
-        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
+        // Fallback: if no VertexConsumerProvider from context, use immediate mode
+        VertexConsumerProvider.Immediate immediate = null;
+        if (consumers == null) {
+            immediate = VertexConsumerProvider.immediate(new BufferBuilder(256));
+            consumers = immediate;
+        }
 
         for (Map.Entry<Integer, Float> entry : displayProgress.entrySet()) {
             Entity entity = context.world().getEntityById(entry.getKey());
@@ -105,13 +102,12 @@ public final class DetectionBarRenderer {
             float progress = entry.getValue();
             if (progress <= 0.01f) continue;
 
-            // Distance culling — skip bars beyond 64 blocks
+            // Distance culling
             double dx = mob.getX() - cameraPos.x;
             double dy = mob.getY() - cameraPos.y;
             double dz = mob.getZ() - cameraPos.z;
             if (dx * dx + dy * dy + dz * dz > 64.0 * 64.0) continue;
 
-            // Interpolated position above mob head
             double x = MathHelper.lerp(tickDelta, mob.prevX, mob.getX()) - cameraPos.x;
             double y = MathHelper.lerp(tickDelta, mob.prevY, mob.getY())
                     + mob.getHeight() + 0.3 - cameraPos.y;
@@ -119,51 +115,43 @@ public final class DetectionBarRenderer {
 
             matrices.push();
             matrices.translate(x, y, z);
-
-            // Billboard: face camera
             matrices.multiply(camera.getRotation());
             matrices.scale(-0.025f, -0.025f, 0.025f);
 
-            renderBar(matrices, progress);
+            renderBar(matrices, consumers, progress);
 
             matrices.pop();
         }
 
-        RenderSystem.enableDepthTest();
-        RenderSystem.disableBlend();
+        // Flush if we created our own immediate provider
+        if (immediate != null) {
+            immediate.draw();
+        }
     }
 
-    private static void renderBar(MatrixStack matrices, float progress) {
+    private static void renderBar(MatrixStack matrices, VertexConsumerProvider consumers, float progress) {
         Matrix4f matrix = matrices.peek().getPositionMatrix();
         float halfWidth = 12.0f;
         float height = 2.5f;
 
-        Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder buffer = tessellator.getBuffer();
+        VertexConsumer buffer = consumers.getBuffer(RenderLayer.getDebugQuads());
 
         // Background (dark semi-transparent)
-        buffer.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
         buffer.vertex(matrix, -halfWidth - 0.5f, -0.5f, 0).color(0, 0, 0, 100).next();
         buffer.vertex(matrix, -halfWidth - 0.5f, height + 0.5f, 0).color(0, 0, 0, 100).next();
         buffer.vertex(matrix, halfWidth + 0.5f, height + 0.5f, 0).color(0, 0, 0, 100).next();
         buffer.vertex(matrix, halfWidth + 0.5f, -0.5f, 0).color(0, 0, 0, 100).next();
-        tessellator.draw();
 
         // Colored fill
         float fillWidth = halfWidth * 2.0f * progress;
         int[] color = getColor(progress);
 
-        buffer.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
         buffer.vertex(matrix, -halfWidth, 0, 0).color(color[0], color[1], color[2], 180).next();
         buffer.vertex(matrix, -halfWidth, height, 0).color(color[0], color[1], color[2], 180).next();
         buffer.vertex(matrix, -halfWidth + fillWidth, height, 0).color(color[0], color[1], color[2], 180).next();
         buffer.vertex(matrix, -halfWidth + fillWidth, 0, 0).color(color[0], color[1], color[2], 180).next();
-        tessellator.draw();
     }
 
-    /**
-     * Smooth color gradient: green (0%) → yellow (50%) → red (100%).
-     */
     private static int[] getColor(float progress) {
         if (progress < 0.5f) {
             float t = progress / 0.5f;
