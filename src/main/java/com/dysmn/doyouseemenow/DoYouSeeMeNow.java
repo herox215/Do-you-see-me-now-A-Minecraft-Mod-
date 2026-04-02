@@ -1,6 +1,7 @@
 package com.dysmn.doyouseemenow;
 
 import com.dysmn.doyouseemenow.detection.DetectionTracker;
+import com.dysmn.doyouseemenow.detection.InvestigatePlayerGoal;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -26,6 +27,7 @@ public class DoYouSeeMeNow implements ModInitializer {
 		ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> {
 			if (entity instanceof MobEntity mob && !ModConfig.get().isBlacklisted(mob)) {
 				mob.goalSelector.add(3, new SearchLastKnownPositionGoal(mob));
+				mob.goalSelector.add(2, new InvestigatePlayerGoal(mob));
 			}
 		});
 

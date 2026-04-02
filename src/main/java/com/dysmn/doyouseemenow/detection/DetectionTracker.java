@@ -26,6 +26,12 @@ public final class DetectionTracker {
 
     private static final Map<MobEntity, DetectionState> detectionMap = new HashMap<>();
 
+    /** Tracks when a mob last had a player as target (world time). */
+    private static final Map<Integer, Long> lastAggroTick = new HashMap<>();
+
+    /** Grace period in ticks — mob skips detection meter if it had a target this recently. */
+    private static final int AGGRO_GRACE_TICKS = 40;
+
     /** Set to true while the tracker is calling setTarget() to bypass mixin checks. */
     public static boolean settingDetectedTarget = false;
 
@@ -91,10 +97,15 @@ public final class DetectionTracker {
                 continue;
             }
 
-            if (state.isDetectedThisTick()) {
+            // Re-check visibility each tick instead of relying on the flag
+            // (TargetPredicate.test() may not run every tick due to goal cooldowns)
+            boolean canDetect = state.isDetectedThisTick()
+                    || VisibilityCheck.canMobDetectTarget(mob, player);
+            state.setDetectedThisTick(false);
+
+            if (canDetect) {
                 double rate = calculateDetectionRate(mob, player, config);
                 state.addProgress(rate);
-                state.setDetectedThisTick(false);
             } else {
                 // Player left sight — decay
                 state.addProgress(-config.detectionDecayRate);
@@ -134,14 +145,20 @@ public final class DetectionTracker {
         double baseRate = 1.0 / config.baseDetectionTicks;
 
         // Distance: closer = faster detection
-        double maxRange = VisibilityCheck.getDetectionRange(player);
         double distance = mob.distanceTo(player);
-        double distanceRatio = 1.0 - Math.min(distance / maxRange, 1.0);
-        double distanceFactor = 1.0 + distanceRatio * config.detectionDistanceMultiplier;
+        double distanceRatio = 1.0 - Math.min(distance / config.maxDetectionRange, 1.0);
 
-        // Light: brighter = faster detection
+        // Instant detection at very close range (within 3 blocks)
+        if (distance <= 3.0) {
+            return 1.0;
+        }
+
+        double curved = distanceRatio * distanceRatio;
+        double distanceFactor = 1.0 + curved * config.detectionDistanceMultiplier;
+
+        // Light: brighter = faster detection, darkness = much slower
         int lightLevel = player.getWorld().getLightLevel(player.getBlockPos());
-        double lightFactor = 1.0 + (lightLevel / 15.0) * config.detectionLightMultiplier;
+        double lightFactor = 0.3 + (lightLevel / 15.0) * config.detectionLightMultiplier;
 
         // Movement: moving = faster detection
         double speed = player.getVelocity().horizontalLength();
@@ -165,7 +182,41 @@ public final class DetectionTracker {
         }
     }
 
+    /**
+     * Returns the player this mob is suspicious of (progress >= 0.5), or null.
+     * Used by InvestigatePlayerGoal to start approaching.
+     */
+    public static ServerPlayerEntity getSuspiciousTarget(MobEntity mob) {
+        DetectionState state = detectionMap.get(mob);
+        if (state != null && state.getProgress() >= 0.5) {
+            return state.getTargetPlayer();
+        }
+        return null;
+    }
+
+    /**
+     * Marks that this mob just lost its target — used to skip detection meter
+     * on quick re-targeting (e.g. player hits mob from behind, FOV briefly fails).
+     */
+    public static void markLostTarget(MobEntity mob) {
+        lastAggroTick.put(mob.getId(), mob.getWorld().getTime());
+    }
+
+    /**
+     * Returns true if this mob had a target very recently and should skip
+     * the detection meter on re-targeting.
+     */
+    public static boolean wasRecentlyAggroed(MobEntity mob) {
+        Long tick = lastAggroTick.get(mob.getId());
+        if (tick == null) return false;
+        long now = mob.getWorld().getTime();
+        if (now - tick < AGGRO_GRACE_TICKS) return true;
+        lastAggroTick.remove(mob.getId());
+        return false;
+    }
+
     public static void clear() {
         detectionMap.clear();
+        lastAggroTick.clear();
     }
 }

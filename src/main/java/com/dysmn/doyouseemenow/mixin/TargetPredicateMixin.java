@@ -28,14 +28,24 @@ public abstract class TargetPredicateMixin {
 			CallbackInfoReturnable<Boolean> cir
 	) {
 		if (cir.getReturnValue() && baseEntity instanceof MobEntity mob) {
+			// Already chasing this target — FOV only, skip detection meter
+			if (mob.getTarget() == targetEntity) {
+				if (!VisibilityCheck.canMobSeeTarget(mob, targetEntity)) {
+					cir.setReturnValue(false);
+				}
+				return;
+			}
+
 			if (!VisibilityCheck.canMobDetectTarget(mob, targetEntity)) {
 				cir.setReturnValue(false);
 				return;
 			}
 
 			// Detection meter: delay targeting for non-blacklisted mobs
+			// Skip if mob was aggroed recently (e.g. briefly lost FOV during combat)
 			ModConfig config = ModConfig.get();
 			if (config.detectionEnabled && !config.isBlacklisted(mob)
+					&& !DetectionTracker.wasRecentlyAggroed(mob)
 					&& targetEntity instanceof ServerPlayerEntity player
 					&& !mob.getWorld().isClient()) {
 				DetectionTracker.onMobDetectsPlayer(mob, player);

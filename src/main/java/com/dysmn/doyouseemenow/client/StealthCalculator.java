@@ -44,8 +44,7 @@ public final class StealthCalculator {
 		double armorScore = (4.0 - heavyPieces) / 4.0;
 
 		double nearestDist = findNearestMobDistance(player, world, 48.0);
-		double maxRange = Math.max(lightLevel * 2.5, 4.0);
-		double proximityScore = Math.min(nearestDist / maxRange, 1.0);
+		double proximityScore = Math.min(nearestDist / 32.0, 1.0);
 
 		double speed = player.getVelocity().horizontalLength();
 		double movementScore = speed < 0.001 ? 1.0 : 0.3;
@@ -106,7 +105,7 @@ public final class StealthCalculator {
 		for (Entity entity : world.getEntitiesByClass(MobEntity.class, searchBox, HEARING_FILTER)) {
 			if (entity instanceof MobEntity mob) {
 				if (VisibilityCheck.isInFieldOfView(mob, player)
-						&& hasLineOfSight(world, mob.getEyePos(), playerCenter)) {
+						&& hasLineOfSight(world, mob, mob.getEyePos(), playerCenter)) {
 					return true;
 				}
 			}
@@ -114,12 +113,12 @@ public final class StealthCalculator {
 		return false;
 	}
 
-	private static boolean hasLineOfSight(ClientWorld world, Vec3d from, Vec3d to) {
+	private static boolean hasLineOfSight(ClientWorld world, Entity entity, Vec3d from, Vec3d to) {
 		RaycastContext context = new RaycastContext(
 				from, to,
 				RaycastContext.ShapeType.COLLIDER,
 				RaycastContext.FluidHandling.NONE,
-				null
+				entity
 		);
 		BlockHitResult result = world.raycast(context);
 		return result.getType() == HitResult.Type.MISS;

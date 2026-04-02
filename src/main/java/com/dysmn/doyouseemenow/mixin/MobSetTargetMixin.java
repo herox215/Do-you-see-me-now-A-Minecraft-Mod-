@@ -67,16 +67,29 @@ public abstract class MobSetTargetMixin {
 			return;
 		}
 
-		// Player is actually seen -> send "!" packet
+		// Player is actually seen — if detection meter is enabled, route through it
 		if (target instanceof ServerPlayerEntity player && target != oldTarget) {
+			// Skip detection meter if the mob was aggroed very recently (e.g. hit from behind)
+			if (!DetectionTracker.wasRecentlyAggroed(self)) {
+				ModConfig config = ModConfig.get();
+				if (config.detectionEnabled && !config.isBlacklisted(self)
+						&& !self.getWorld().isClient()) {
+					DetectionTracker.onMobDetectsPlayer(self, player);
+					ci.cancel();
+					return;
+				}
+			}
+
+			// Detection disabled or recently aggroed — immediate aggro with "!" packet
 			PacketByteBuf buf = PacketByteBufs.create();
 			buf.writeInt(self.getId());
 			ServerPlayNetworking.send(player, NetworkConstants.MOB_SPOTTED_PACKET, buf);
 		}
 
-		// Lost player as target -> remember last known position
+		// Lost player as target -> remember last known position + mark for grace period
 		if (oldTarget instanceof ServerPlayerEntity && target == null) {
 			((LastKnownPositionAccess) self).dysmn$setLastKnownTargetPos(oldTarget.getPos());
+			DetectionTracker.markLostTarget(self);
 		}
 
 		// New target set -> clear old search position

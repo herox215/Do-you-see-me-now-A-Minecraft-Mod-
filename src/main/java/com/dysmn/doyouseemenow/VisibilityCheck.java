@@ -21,8 +21,9 @@ public final class VisibilityCheck {
 	}
 
 	/**
-	 * Checks if a mob can initially detect a target (FOV + light-based distance).
-	 * Used for first detection: range depends on the light level at the target.
+	 * Checks if a mob can initially detect a target (FOV + max range).
+	 * Light level does NOT affect whether a mob can see — only how fast
+	 * the detection meter fills (handled in DetectionTracker).
 	 */
 	public static boolean canMobDetectTarget(MobEntity mob, Entity target) {
 		if (ModConfig.get().isBlacklisted(mob)) {
@@ -33,25 +34,8 @@ public final class VisibilityCheck {
 			return false;
 		}
 
-		return isWithinLightBasedRange(mob, target);
-	}
-
-	/**
-	 * Calculates the maximum detection range based on the light level at the target.
-	 */
-	public static double getDetectionRange(Entity target) {
-		if (target.getWorld() == null) return ModConfig.get().minDetectionRange;
-
-		BlockPos targetPos = target.getBlockPos();
-		int lightLevel = target.getWorld().getLightLevel(targetPos);
-
-		return Math.max(ModConfig.get().minDetectionRange, lightLevel * ModConfig.get().blocksPerLight);
-	}
-
-	private static boolean isWithinLightBasedRange(MobEntity mob, Entity target) {
-		double maxRange = getDetectionRange(target);
 		double distance = mob.getEyePos().distanceTo(target.getBoundingBox().getCenter());
-		return distance <= maxRange;
+		return distance <= ModConfig.get().maxDetectionRange;
 	}
 
 	public static boolean isInFieldOfView(MobEntity mob, Entity target) {

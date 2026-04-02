@@ -38,11 +38,8 @@ public class ModConfig {
 	/** Total field of view in degrees (default: 120) */
 	public double fovDegrees = 120.0;
 
-	/** Detection range multiplier per light level in blocks (default: 2.5) */
-	public double blocksPerLight = 2.5;
-
-	/** Minimum detection range in total darkness (default: 4.0) */
-	public double minDetectionRange = 4.0;
+	/** Maximum detection range in blocks — mobs can see up to this far (default: 32.0) */
+	public double maxDetectionRange = 32.0;
 
 	// --- Search Behavior ---
 
@@ -169,8 +166,8 @@ public class ModConfig {
 	/** Extra detection speed bonus when player is moving (added to base 1.0, default: 0.5) */
 	public double detectionMovementMultiplier = 0.5;
 
-	/** Extra detection speed bonus from distance (closer = more bonus, default: 1.0) */
-	public double detectionDistanceMultiplier = 1.0;
+	/** Extra detection speed bonus from distance (closer = more bonus, default: 8.0) */
+	public double detectionDistanceMultiplier = 8.0;
 
 	/** Extra detection speed bonus from light level (brighter = more bonus, default: 1.0) */
 	public double detectionLightMultiplier = 1.0;
