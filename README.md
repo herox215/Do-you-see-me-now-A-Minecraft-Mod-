@@ -10,7 +10,7 @@ Vanilla mobs see you through 360°, through darkness, instantly. That's boring. 
 
 **Detection Meter** — Mobs don't aggro instantly anymore. A bar fills above their head as they become aware of you. How fast depends on distance, light, and whether you're moving. In darkness it's slow. Next to a torch, fast. Within 3 blocks, instant — you can't sneak past their nose.
 
-The bar goes green → yellow → red. Break line of sight and it decays. Some mobs skip the meter entirely (Dragon, Wither, Warden, Enderman).
+The bar goes green → yellow → red. Break line of sight and it decays. Some mobs skip the meter entirely (Dragon, Wither, Warden, Enderman, Shulker, Slime, Magma Cube).
 
 **Investigation** — At 50% detection, mobs get suspicious and start walking toward you. If you disappear before full detection, they go to your last known position and look around. Hit a mob from the shadows and it investigates where the hit came from instead of magically knowing your position.
 
@@ -20,9 +20,13 @@ Only hostile mobs react to sound (26 vanilla types, configurable).
 
 **Stealth HUD** — Shows up while sneaking. Eye icon with a score bar based on light (35%), mob proximity (25%), armor (15%), movement (15%), and whether you're in a mob's FOV (10%). Uses raycasting, so blocks actually block line of sight.
 
-**Visual feedback** — `!` particle when a mob spots you, `?` when it's searching.
+**Visual feedback** — Yellow crit-star burst when a mob spots you, blue orbiting particles when it's searching.
+
+**Sneak Boots** — Craftable from leather boots + phantom membranes. Grants a stealth bonus that slows mob detection. Works with sneaking for maximum effect.
 
 **Aggro grace period** — If a mob loses you briefly during combat (ducking behind a pillar), it re-aggros immediately within 2 seconds. No cheese.
+
+**Velocity prediction** — When a mob loses sight of you, it doesn't just run to where you vanished. It predicts where you're heading based on your movement direction and searches ahead.
 
 ## Config
 
@@ -34,6 +38,10 @@ Everything is configurable — detection speed, decay, FOV angle, range, sound r
 - Fabric Loader ≥ 0.15.0
 - Fabric API
 - Java 17+
+
+## Translations
+
+English, German, Spanish, French, Brazilian Portuguese, Russian, Simplified Chinese, Traditional Chinese, Japanese, Korean, Italian, Polish.
 
 ## License
 
