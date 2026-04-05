@@ -87,8 +87,14 @@ public abstract class MobSetTargetMixin {
 		}
 
 		// Lost player as target -> remember last known position + mark for grace period
+		// Project position forward based on player velocity so mob searches
+		// where the player is heading, not where they vanished
 		if (oldTarget instanceof ServerPlayerEntity && target == null) {
-			((LastKnownPositionAccess) self).dysmn$setLastKnownTargetPos(oldTarget.getPos());
+			Vec3d pos = oldTarget.getPos();
+			Vec3d vel = oldTarget.getVelocity();
+			double projectionTicks = 20.0; // ~1 second into the future
+			pos = pos.add(vel.x * projectionTicks, 0, vel.z * projectionTicks);
+			((LastKnownPositionAccess) self).dysmn$setLastKnownTargetPos(pos);
 			DetectionTracker.markLostTarget(self);
 		}
 

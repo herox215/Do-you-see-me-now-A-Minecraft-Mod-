@@ -110,7 +110,7 @@ public final class SoundDetectionManager {
 		);
 
 		for (MobEntity mob : nearbyMobs) {
-			double fatigue = SoundFatigue.getAndRecord(mob, event.position(), worldTime);
+			double fatigue = SoundFatigue.getAndRecord(mob, event.position(), event.type(), worldTime);
 			if (fatigue <= 0.0) continue;
 
 			if (fatigue < 1.0) {

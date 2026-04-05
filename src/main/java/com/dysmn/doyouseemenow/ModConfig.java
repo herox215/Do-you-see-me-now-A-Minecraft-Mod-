@@ -30,7 +30,10 @@ public class ModConfig {
 		"minecraft:ender_dragon",
 		"minecraft:wither",
 		"minecraft:warden",
-		"minecraft:enderman"
+		"minecraft:enderman",
+		"minecraft:shulker",
+		"minecraft:slime",
+		"minecraft:magma_cube"
 	);
 
 	/**
@@ -170,8 +173,7 @@ public class ModConfig {
 		"minecraft:elder_guardian",
 		"minecraft:silverfish",
 		"minecraft:endermite",
-		"minecraft:vex",
-		"minecraft:shulker"
+		"minecraft:vex"
 	);
 
 	// --- Detection Meter ---

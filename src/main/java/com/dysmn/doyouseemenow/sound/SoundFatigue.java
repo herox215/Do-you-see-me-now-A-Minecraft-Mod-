@@ -37,18 +37,27 @@ public final class SoundFatigue {
 	 * Returns the fatigue multiplier for this mob hearing a sound at the given position.
 	 * 1.0 = full interest, 0.5 = reduced, 0.0 = completely bored.
 	 * Also records the position so the next call will be more fatigued.
+	 *
+	 * Fatigue is tracked per sound category — movement sounds (walking, sprinting, landing)
+	 * have separate fatigue from action sounds (block hit, block use, attack, etc.),
+	 * so footsteps don't suppress reaction to block interactions.
 	 */
-	public static double getAndRecord(MobEntity mob, Vec3d soundPos, long worldTime) {
+	public static double getAndRecord(MobEntity mob, Vec3d soundPos, SoundType soundType, long worldTime) {
 		UUID mobId = mob.getUuid();
 		List<FatigueEntry> memories = mobMemories.computeIfAbsent(mobId, k -> new ArrayList<>());
 
 		// Purge expired entries
 		memories.removeIf(e -> worldTime - e.timestamp > MEMORY_DURATION_TICKS);
 
-		// Find if this position overlaps with a remembered one
+		boolean isMovement = soundType == SoundType.WALKING
+				|| soundType == SoundType.SPRINTING
+				|| soundType == SoundType.LANDING;
+
+		// Find if this position overlaps with a remembered one of the same category
 		FatigueEntry match = null;
 		for (FatigueEntry entry : memories) {
-			if (entry.position.distanceTo(soundPos) <= SAME_SPOT_RADIUS) {
+			if (entry.movement == isMovement
+					&& entry.position.distanceTo(soundPos) <= SAME_SPOT_RADIUS) {
 				match = entry;
 				break;
 			}
@@ -61,7 +70,7 @@ public final class SoundFatigue {
 			if (memories.size() >= MAX_MEMORIES) {
 				memories.remove(0);
 			}
-			memories.add(new FatigueEntry(soundPos, 1, worldTime));
+			memories.add(new FatigueEntry(soundPos, 1, worldTime, isMovement));
 		} else {
 			// Seen this spot before
 			match.hitCount++;
@@ -91,11 +100,13 @@ public final class SoundFatigue {
 		Vec3d position;
 		int hitCount;
 		long timestamp;
+		boolean movement; // true = walking/sprinting/landing, false = action sounds
 
-		FatigueEntry(Vec3d position, int hitCount, long timestamp) {
+		FatigueEntry(Vec3d position, int hitCount, long timestamp, boolean movement) {
 			this.position = position;
 			this.hitCount = hitCount;
 			this.timestamp = timestamp;
+			this.movement = movement;
 		}
 	}
 }
