@@ -23,6 +23,8 @@ public class DoYouSeeMeNow implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
+		ModAttributes.register();
+		ModItems.register();
 		ModConfig.load();
 		LOGGER.info("Do You See Me Now loaded!");
 

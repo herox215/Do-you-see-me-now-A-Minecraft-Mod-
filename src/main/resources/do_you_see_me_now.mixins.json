@@ -9,6 +9,7 @@
 		"MobEntityCanSeeMixin",
 		"MobEntityDataMixin",
 		"MobSetTargetMixin",
+		"PlayerAttributeMixin",
 		"PlayerAttackSoundMixin",
 		"PlayerMovementSoundMixin",
 		"ProjectileImpactSoundMixin",

@@ -1,8 +1,10 @@
 package com.dysmn.doyouseemenow.detection;
 
+import com.dysmn.doyouseemenow.ModAttributes;
 import com.dysmn.doyouseemenow.ModConfig;
 import com.dysmn.doyouseemenow.NetworkConstants;
 import com.dysmn.doyouseemenow.VisibilityCheck;
+import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -233,7 +235,15 @@ public final class DetectionTracker {
 
         double sneakFactor = player.isSneaking() ? config.detectionSneakMultiplier : 1.0;
 
-        return baseRate * distanceFactor * lightFactor * movementFactor * sneakFactor;
+        // Stealth bonus from equipment (e.g. Sneak Boots) reduces detection rate
+        double stealthFactor = 1.0;
+        EntityAttributeInstance stealthAttr = player.getAttributeInstance(ModAttributes.STEALTH_BONUS);
+        if (stealthAttr != null && stealthAttr.getValue() > 0) {
+            // 0.15 bonus → 0.85 multiplier (15% slower detection)
+            stealthFactor = Math.max(1.0 - stealthAttr.getValue(), 0.2);
+        }
+
+        return baseRate * distanceFactor * lightFactor * movementFactor * sneakFactor * stealthFactor;
     }
 
     /**

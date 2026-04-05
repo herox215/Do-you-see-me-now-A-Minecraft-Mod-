@@ -4,6 +4,7 @@ import com.dysmn.doyouseemenow.client.ClientModConfig;
 import com.dysmn.doyouseemenow.client.DetectionBarRenderer;
 import com.dysmn.doyouseemenow.client.SpottedParticles;
 import com.dysmn.doyouseemenow.client.SpottedTracker;
+import com.dysmn.doyouseemenow.client.StealthCalculator;
 import com.dysmn.doyouseemenow.client.StealthHudRenderer;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;

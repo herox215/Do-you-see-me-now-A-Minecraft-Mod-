@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "do_you_see_me_now:item/sneak_boots"
+  }
+}

@@ -1,9 +1,11 @@
 package com.dysmn.doyouseemenow.client;
 
+import com.dysmn.doyouseemenow.ModAttributes;
 import com.dysmn.doyouseemenow.VisibilityCheck;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.mob.HostileEntity;
@@ -61,6 +63,15 @@ public final class StealthCalculator {
 		double rawScore = (lightScore * 0.35) + (armorScore * 0.15)
 						+ (proximityScore * 0.25) + (movementScore * 0.15)
 						+ (fovScore * 0.10);
+
+		// Apply stealth bonus from equipment (e.g. Sneak Boots)
+		// Mirrors server-side logic in DetectionTracker: reduces the "exposed" portion
+		EntityAttributeInstance stealthAttr = player.getAttributeInstance(ModAttributes.STEALTH_BONUS);
+		if (stealthAttr != null && stealthAttr.getValue() > 0) {
+			double exposed = 1.0 - rawScore;
+			exposed *= Math.max(1.0 - stealthAttr.getValue(), 0.2);
+			rawScore = 1.0 - exposed;
+		}
 
 		smoothedScore += (rawScore - smoothedScore) * SMOOTHING;
 		return smoothedScore;

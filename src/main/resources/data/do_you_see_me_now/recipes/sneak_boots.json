@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " P ",
+    "PBP",
+    "   "
+  ],
+  "key": {
+    "B": {
+      "item": "minecraft:leather_boots"
+    },
+    "P": {
+      "item": "minecraft:phantom_membrane"
+    }
+  },
+  "result": {
+    "item": "do_you_see_me_now:sneak_boots"
+  }
+}

@@ -1,19 +1,23 @@
 package com.dysmn.doyouseemenow.client;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.util.Identifier;
 
 /**
- * Renders the stealth HUD: an eye symbol + percentage + score bar.
+ * Renders the stealth HUD: a large pixel-art eye icon with percentage beneath.
  * Only visible while sneaking, with a smooth fade in/out.
- *
- * Score states:
- * - 70–100% green  (well hidden)
- * - 30–70%  yellow (moderate risk)
- * - 0–30%   red    (high detection risk)
+ * The eye is tinted green → yellow → red based on stealth score.
  */
 public final class StealthHudRenderer {
+
+	private static final Identifier EYE_TEXTURE = new Identifier("do_you_see_me_now", "textures/gui/detection_eye.png");
+
+	/** Eye icon display size — large, percentage sits neatly below. */
+	private static final int EYE_WIDTH = 48;
+	private static final int EYE_HEIGHT = 24;
 
 	private static float fadeAlpha = 0.0f;
 	private static final float FADE_SPEED = 0.05f;
@@ -44,50 +48,42 @@ public final class StealthHudRenderer {
 		double score = StealthCalculator.calculate(player, client.world);
 		int percentage = (int) (score * 100);
 
-		// Position: bottom-left, above the hotbar
-		int x = 10;
-		int y = context.getScaledWindowHeight() - 50;
-
 		int alpha = (int) (fadeAlpha * 255);
 		int color = getScoreColor(score, alpha);
+		int[] rgb = getScoreRgb(score);
 
-		String eyeSymbol = getEyeSymbol(score);
+		// Layout: large eye with percentage centered below, bottom-left above hotbar
+		String text = percentage + "%";
+		int textWidth = client.textRenderer.getWidth(text);
 
-		// Semi-transparent background
-		int bgAlpha = (int) (fadeAlpha * 100);
-		context.fill(x - 2, y - 2, x + 60, y + 12, (bgAlpha << 24));
+		int eyeX = 10;
+		int eyeY = context.getScaledWindowHeight() - 58;
+		int textX = eyeX + (EYE_WIDTH - textWidth) / 2;
+		int textY = eyeY + EYE_HEIGHT + 2;
 
-		// Eye symbol + percentage
-		context.drawTextWithShadow(client.textRenderer,
-			eyeSymbol + " " + percentage + "%",
-			x, y, color);
+		// Draw eye texture (tinted by score color)
+		RenderSystem.enableBlend();
+		RenderSystem.defaultBlendFunc();
+		RenderSystem.setShaderColor(rgb[0] / 255.0f, rgb[1] / 255.0f, rgb[2] / 255.0f, fadeAlpha);
+		context.drawTexture(EYE_TEXTURE, eyeX, eyeY, 0, 0, EYE_WIDTH, EYE_HEIGHT, EYE_WIDTH, EYE_HEIGHT);
+		RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
 
-		// Score bar below text
-		int barWidth = 56;
-		int barHeight = 3;
-		int barY = y + 12;
-		int filledWidth = (int) (barWidth * score);
-
-		// Bar background
-		context.fill(x, barY, x + barWidth, barY + barHeight,
-			(bgAlpha << 24) | 0x333333);
-		// Bar fill
-		context.fill(x, barY, x + filledWidth, barY + barHeight, color);
+		// Percentage centered below the eye
+		context.drawTextWithShadow(client.textRenderer, text, textX, textY, color);
 	}
 
 	private static int getScoreColor(double score, int alpha) {
-		if (score < 0.3) {
-			return (alpha << 24) | 0xFF4444; // Red
-		} else if (score < 0.7) {
-			return (alpha << 24) | 0xFFAA00; // Yellow/Orange
-		} else {
-			return (alpha << 24) | 0x44FF44; // Green
-		}
+		int[] rgb = getScoreRgb(score);
+		return (alpha << 24) | (rgb[0] << 16) | (rgb[1] << 8) | rgb[2];
 	}
 
-	private static String getEyeSymbol(double score) {
-		if (score >= 0.7) return "\u25C9";      // ◉ well hidden
-		else if (score >= 0.3) return "\u25CE";  // ◎ moderate risk
-		else return "\u2299";                    // ⊙ high risk
+	private static int[] getScoreRgb(double score) {
+		if (score < 0.3) {
+			return new int[]{255, 68, 68};   // Red
+		} else if (score < 0.7) {
+			return new int[]{255, 170, 0};    // Yellow/Orange
+		} else {
+			return new int[]{68, 255, 68};    // Green
+		}
 	}
 }
